@@ -1,0 +1,67 @@
+@name Maul Abuse
+@persist TargetSteamID:string Target:entity HOLO:entity
+@strict
+
+#[
+    Chip made to abuse naughty players.
+    To use -> just change line TargetSteamID to your victim's steam id (in format ex. "STEAM_0:0:505050505")
+    
+    ###################################
+    ##      made by deltamolfar      ##
+    ##        Glory to Ukraine       ##
+    ###################################
+    
+    This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
+    If you change anything in this code, don't expect me to help you.
+]#
+
+if( first() || dupefinished() ){
+    TargetSteamID = "STEAM_0:1:506611336"
+    Target = findPlayerBySteamID(TargetSteamID)
+    
+    HOLO = holoCreate(1)
+    holoAlpha(1, 0)
+    holoModel(1, "hq_sphere")
+    holoScale(1, vec(3,3,3))
+    holoDisableShading(1, 1)
+    holoPos(1, Target:attachmentPos("eyes"))
+    holoAng(1, Target:attachmentAng("eyes"))
+    holoInvertModel(1, 1)
+    holoParentAttachment(1, Target, "eyes")
+    
+    function blind(){
+        #if( 1 ){ return }
+        
+        if(HOLO:getAlpha() == 0){
+            HOLO:setAlpha(255)
+            HOLO:setColor(vec(randint(1, 0)*255, randint(1, 0)*255, randint(1, 0)*255))
+        } else{
+            HOLO:setAlpha(0)
+        }
+    }
+    
+    function kill(){
+        #if( 1 ){ return }
+        concmd("ulx maul \""+Target:name()+"\"")
+    }
+    
+    function revive(){
+        concmd("ulx revive \""+Target:name()+"\"")
+    }
+    
+    timer("blind", 250)
+}
+elseif( clk("blind") ){
+    blind()
+    timer("blind", 500)
+}
+
+event tick(){
+    if( !Target:isValid() ){ exit() }
+    if( Target:isAlive() ){
+        kill()
+        blind()
+    } else{
+        revive()
+    }
+}
