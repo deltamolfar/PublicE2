@@ -1,0 +1,117 @@
+@name BesierInterpolation test
+@persist [E1 E2 E3 E4 E5 HOLOBullet]:entity
+@persist NumSteps StepSize I Size #AngOffset:angle 
+
+if( first() ){
+    propSpawnUndo(0)
+    
+    NumSteps = 100
+    StepSize = 2
+    Size = 5
+    
+    local Model = "models/hunter/blocks/cube025x025x025.mdl"
+    #AngOffset = ang(0,0,0)
+    
+    HOLOBullet = holoCreate(1, entity():pos(), vec(1,1,1), ang(0,0,0), vec4(200,200,200, 200), "models/Items/AR2_Grenade.mdl")
+    HOLOBullet:setTrails(8, 8, 128, "trails/laser", vec(255,255,0), 255)
+    
+    E1 = propSpawn(Model, entity():pos()+vec(-60,0,40)*Size, ang(0,0,0), 1)
+    E1:setColor(vec4(60,60,60, 180))
+    E2 = propSpawn(Model, entity():pos()+vec(-40,0,100)*Size, ang(0,0,0), 1)
+    E2:setColor(vec4(100,100,100, 180))
+    E3 = propSpawn(Model, entity():pos()+vec(0,0,120)*Size, ang(0,0,0), 1)
+    E3:setColor(vec4(140,140,140, 180))
+    E4 = noentity()
+    E5 = noentity()    
+    
+    timer("Cancer_Delay", 1000)
+    
+    function start(){
+        I = 1
+        timer("LOOP_Bezier", 50)
+    }
+    
+    function vector getControlPoint(N:number){
+        switch(N){
+            case 1,
+                return E1:pos() + (E2:pos()-E1:pos()) * -0.35
+            case 2,
+                return E2:pos() + (E3:pos()-E2:pos()) * -0.35
+            case 3,
+                return E3:pos() + (E4:pos()-E3:pos()) * -0.35
+            case 4,
+                return E4:pos() + (E5:pos()-E4:pos()) * -0.35   
+        }
+        
+        return vec()
+    }
+    
+    function vector getInterpolatedPoint(StartPoint:vector, EndPoint:vector, T:number){
+        return StartPoint + (EndPoint - StartPoint) * T
+    }
+    
+    function vector catmullRomSpline(P0:vector, P1:vector, P2:vector, P3:vector, T:number){
+        local V0 = (P2 - P0) * 0.5
+        local V1 = (P3 - P1) * 0.5
+        local T2 = T * T
+        local T3 = T2 * T
+        return (2 * P1 - 2 * P2 + V0 + V1) * T3 + (-3 * P1 + 3 * P2 - 2 * V0 - V1) * T2 + V0 * T + P1
+    }
+    
+} elseif( clk("Cancer_Delay") ){
+    local Model = "models/hunter/blocks/cube025x025x025.mdl"
+    
+    E4 = propSpawn(Model, entity():pos()+vec(40,0,100)*Size, ang(0,0,0), 1)
+    E4:setColor(vec4(180,180,180, 180))
+    E5 = propSpawn(Model, entity():pos()+vec(60,0,40)*Size, ang(0,0,0), 1)
+    E5:setColor(vec4(240,240,240, 180))
+    
+    start()
+} elseif( clk("LOOP_Bezier") ){
+    local T = I / NumSteps
+    local PosVector = vec()
+    
+    #[if( T <= 0.25 ){
+        PosVector = bezier( E1:pos(), getControlPoint(1), getControlPoint(2), E2:pos(), T*4 )
+    } elseif( 0.25 < T && T <= 0.5 ){
+        PosVector = bezier( E2:pos(), getControlPoint(2), getControlPoint(3), E3:pos(), (T-0.25)*4 )
+    } elseif( 0.5 < T && T <= 0.75 ){
+        PosVector = bezier( E3:pos(), getControlPoint(3), getControlPoint(4), E4:pos(), (T-0.5)*4 )
+    } else{
+        PosVector = bezier( E4:pos(), getControlPoint(4), E5:pos(), E5:pos(), (T-0.75)*4 )
+    }
+    
+    if(T <= 0.25){
+        PosVector = getInterpolatedPoint(E1:pos(), E2:pos(), T * 4)
+    } elseif( 0.25 < T && T <= 0.5){
+        PosVector = getInterpolatedPoint(E2:pos(), E3:pos(), (T - 0.25) * 4)
+    } elseif(0.5 < T && T <= 0.75){
+        PosVector = getInterpolatedPoint(E3:pos(), E4:pos(), (T - 0.5) * 4)
+    } else{
+        PosVector = getInterpolatedPoint(E4:pos(), E5:pos(), (T - 0.75) * 4)
+    }
+    
+    ]#
+    
+    if(T <= 0.25){
+        PosVector = catmullRomSpline(E1:pos(), E1:pos(), E2:pos(), E3:pos(), T * 4)
+    } elseif( 0.25 < T && T <= 0.5){
+        PosVector = catmullRomSpline(E1:pos(), E2:pos(), E3:pos(), E4:pos(), (T - 0.25) * 4)
+    } elseif(0.5 < T && T <= 0.75){
+        PosVector = catmullRomSpline(E2:pos(), E3:pos(), E4:pos(), E5:pos(), (T - 0.5) * 4)
+    } else{
+        PosVector = catmullRomSpline(E3:pos(), E4:pos(), E5:pos(), E5:pos(), (T - 0.75) * 4)
+    }
+    
+    I+=StepSize
+    HOLOBullet:setPos(PosVector)
+    
+    if( floor(HOLOBullet:pos()) == floor(E3:pos()) ){ print(I, T) }
+    
+    if( I<NumSteps ){ timer("LOOP_Bezier", 50) }
+    #else{ start() }
+}
+
+event chat(Player:entity, Message:string, _:number) {
+    if( Player==owner() && Message:lower():find("!start")!=0 ){ if( !E5:isValid() ){ print("Not ready!") exit() } start() }
+}
