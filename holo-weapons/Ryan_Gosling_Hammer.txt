@@ -1,6 +1,18 @@
 @name Drive's Ryan Gosling Hammer
 @persist HOLO_Hammer:entity WeaponType:string
 
+#[
+    Chip made for being able to cosplay Ryan Gosling (Outfitter/Custom PMs often breaks it).
+    
+    ###################################
+    ##      made by deltamolfar      ##
+    ##        Glory to Ukraine       ##
+    ###################################
+    
+    This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
+    If you change anything in this code, don't expect me to help you.
+]#
+
 if( first() || dupefinished() ){
     HOLO_Hammer = noentity()
     WeaponType = "weapon_crowbar"
