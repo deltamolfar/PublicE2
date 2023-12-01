@@ -1,0 +1,164 @@
+@name Simple Clock by deltamolfar
+@inputs UTC# If non zero -> Will modify displayed time. Default UTC inside is UTC+2 (Kyiv time). Ex: If UTC == 1 -> time of clock will be UTC+1
+@persist [Speech TimeTable]:table StartingCurtime
+@model models/props_trainstation/trainstation_clock001.mdl
+@strict
+
+#[
+    Chip made for being used as a clock.
+    
+    ###################################
+    ## Advanced Health System v1.2.1 ##
+    ##      made by deltamolfar      ##
+    ##        Glory to Ukraine       ##
+    ###################################
+    
+    This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
+    If you change anything in this code, don't expect me to help you.
+]#
+
+function updateTime(TimeTable:table){
+    local Base = entity()
+    
+    local TimeAng = TimeTable["Second", number]/60*-360
+    local Pos = Base:toWorld(ang(0,0,TimeAng):up() * 14)
+    holoPos(3, Pos)
+    holoAng(3, Base:toWorld(ang(0,0,TimeAng)))
+    
+    TimeAng = TimeTable["Minute", number]/60*-360+TimeAng*0.01
+    Pos = Base:toWorld(ang(0,0,TimeAng):up() * 11)
+    holoPos(2, Pos)
+    holoAng(2, Base:toWorld(ang(0,0,TimeAng)))
+    
+    TimeAng = TimeTable["Hour", number]/12*-360+TimeAng*0.01
+    Pos = Base:toWorld(ang(0,0,TimeAng):up() * 6)
+    holoPos(1, Pos)
+    holoAng(1, Base:toWorld(ang(0,0,TimeAng)))
+}
+
+function number isTimerRunning(Name:string){
+    foreach(_:number, V:string = getTimers()){
+        if( Name==V ){ return 1 }
+    }
+    
+    return 0
+}
+
+
+if( first() || duped() ){
+    TimeTable = table()
+    
+    NumberToSoundPath = array()
+    NumberToSoundPath[1, string] = "npc/overwatch/radiovoice/one.wav"
+    NumberToSoundPath[2, string] = "npc/overwatch/radiovoice/two.wav"
+    NumberToSoundPath[3, string] = "npc/overwatch/radiovoice/three.wav"
+    NumberToSoundPath[4, string] = "npc/overwatch/radiovoice/four.wav"
+    NumberToSoundPath[5, string] = "npc/overwatch/radiovoice/five.wav"
+    NumberToSoundPath[6, string] = "npc/overwatch/radiovoice/six.wav"
+    NumberToSoundPath[7, string] = "npc/overwatch/radiovoice/seven.wav"
+    NumberToSoundPath[8, string] = "npc/overwatch/radiovoice/eight.wav"
+    NumberToSoundPath[9, string] = "npc/overwatch/radiovoice/nine.wav"
+    NumberToSoundPath[0, string] = "npc/overwatch/radiovoice/zero.wav"
+    
+    Speech = table()
+    Speech["SoundList", array] = NumberToSoundPath:clone()
+    Speech["TimeToSay", string] = ""
+    Speech["CurrentCharIndex", number] = 0
+}
+if( first() || dupefinished() ){
+    local Ent = entity()
+    local EntPos = Ent:pos()+entity():forward()*-1
+    local EntAng = Ent:toWorld(ang(0,90,0))
+    local Color = vec4(30,30,30, 255)
+    local Scale = vec(0.1,0.1,1)
+    
+    for(I=1, 3){
+        holoCreate(I, EntPos, Scale, EntAng, Color, "models/holograms/hq_cylinder.mdl")
+        holoParent(I, entity())
+    }
+    
+    holoScale(1, Scale*vec(1,1,1.25))
+    holoScale(2, Scale*vec(1,1,1.5))
+    holoScale(3, Scale*vec(0.75,0.75,2))
+    
+    holoCreate(4, EntPos, vec(0.4), Ent:toWorld(ang(0,90,90)),  Color, "models/holograms/hq_cylinder.mdl")
+    holoClipEnabled(4, 1)
+    holoClip(4, vec(0,0,0), vec(0,0,1), 0)
+    holoParent(4, entity())
+    
+    hint("Clock by deltamolfar", 5)
+    
+    local Offset = 2
+    if( UTC!=0 ){ Offset = floor(UTC) }
+    local Hour = time("hour")+Offset
+    
+    if( Hour>24 ){ Hour = Hour-24 }
+    TimeTable["Hour", number] = Hour
+    StartingCurtime = floor( curtime() )
+    
+    timer("sync", 50)
+}
+elseif( clk() ){
+    interval(1000)
+    
+    local Offset = 2
+    if( UTC!=0 ){ Offset = floor(UTC) }
+    
+    local Hour = time("hour")+Offset
+    if( Hour>24 ){ Hour = Hour-24 }
+    
+    if( TimeTable["Hour", number]!=Hour ){ entity():emitSound("ambient/misc/brass_bell_c.wav") }
+
+    TimeTable["Hour", number] = Hour
+    
+    TimeTable["Minute", number] = time("min")
+    
+    TimeTable["Second", number] = time("sec")
+    
+    updateTime(TimeTable)
+    entity():emitSound("buttons/lightswitch2.wav", 70, 75, 90)
+}
+elseif( clk("Speech_Next") ){
+    local EmitSoundPath = ""
+    
+    if( Speech["TimeToSay", string][Speech["CurrentCharIndex", number]]!=":" ){
+        local Byte = toByte(Speech["TimeToSay", string], Speech["CurrentCharIndex", number])
+        EmitSoundPath = Speech["SoundList", array][Byte-48, string]
+    }
+    
+    entity():emitSound(EmitSoundPath)
+    
+    if( Speech["CurrentCharIndex", number]!=Speech["TimeToSay", string]:length() ){
+        Speech["CurrentCharIndex", number] = Speech["CurrentCharIndex", number]+1
+        timer("Speech_Next", 500)
+    } else{
+        entity():emitSound("npc/overwatch/radiovoice/off2.wav")
+    }
+}
+elseif( clk("sync") ){# -- Used to sync different clocks
+    if( floor( curtime() )!=StartingCurtime ){
+        interval(1)
+    } else{
+        timer("sync", 5)
+    }
+}
+
+event chipUsed(Player:entity) {
+    if( !isTimerRunning("Cooldown") ){
+        entity():emitSound("npc/overwatch/radiovoice/on3.wav")
+    
+        local SpeechString = toString( TimeTable["Hour", number] )
+        SpeechString += ":"
+        
+        local TempInt = TimeTable["Minute", number]
+        if( TempInt<10 ){ SpeechString+="0" }
+        SpeechString += toString( TempInt )
+    
+        Speech["CurrentCharIndex", number] = 1
+        Speech["TimeToSay", string] = SpeechString
+        if( Player==owner()){ hint("Current time: "+SpeechString, 6) }
+        
+        timer("Speech_Next", 100)
+        timer("Cooldown", 10000)
+    }
+}
