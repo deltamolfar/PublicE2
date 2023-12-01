@@ -1,0 +1,145 @@
+@name Even Spread
+@persist Amount Radius FillInside HalfSphere IsReady LastIndex IsParent Parent:entity
+@strict
+
+#Evenly spreads holograms in sphere, half sphere, either on edge or in inside as well.
+#Useful only for E2 creators.
+
+if( first() || dupefinished() ){
+    Amount = 64
+    Radius = 200
+    FillInside = 1
+    HalfSphere = 1
+    IsReady = 1
+    LastIndex = 1
+    IsParent = 1
+    Parent = entity()
+    
+    if( IsParent ){ assert( Parent:isValid(), "Parent ent is not valid!" ) }
+    
+    function spawnHolo(){
+        for(I=LastIndex, Amount){
+            if( holoCanCreate() ){
+                holoCreate(I)
+                if( IsParent ){ holoParent(I, Parent) }
+            } else{
+                LastIndex = I
+                IsReady = 0
+                timer("HoloDelay", 200)
+                exit()
+            }
+        }
+        
+        IsReady = 1
+        interval(5)
+    }
+    
+    function placeEvenlySpacedSphere(){
+        local Origin = entity():pos()
+        if( IsParent ){ Origin = Parent:pos() }
+        
+        for(I = 1, Amount){
+            local Phi = acos(-1 + (2*I-1)/Amount)
+            local Theta = sqrt(Amount*_PI) * Phi
+            
+            local X = Origin:x()+Radius * sin(Phi) * cos(Theta)
+            local Y = Origin:y()+Radius * sin(Phi) * sin(Theta)
+            local Z = Origin:z()+Radius * cos(Phi)
+            
+            local Pos = vec(X,Y,Z)
+            holoPos(I, Pos)
+        }
+    }
+    
+    function placeEvenlySpacedHalfSphere(){
+        local Origin = entity():pos()
+        if( IsParent ){ Origin = Parent:pos() }
+        
+        for(I = 1, Amount){
+            local Phi = acos(-1 + (2*I-1)/Amount*0.5)
+            local Theta = sqrt(Amount*_PI)*Phi
+            
+            local X = Origin:x()+Radius * sin(Phi) * cos(Theta)
+            local Y = Origin:y()+Radius * sin(Phi) * sin(Theta)
+            local Z = Origin:z()+Radius * cos(Phi)
+            
+            local Pos = vec(X,Y,Z)
+            holoPos(I, Pos)
+        }
+    }
+    
+    function placeEvenlySpacedFilledHalfSphere(){
+        local Origin = entity():pos()
+        if( IsParent ){ Origin = Parent:pos() }
+        
+        for(I = 1, Amount*0.5){
+            #local Phi = acos(-1 + (2*I-1)/Amount)# -- For lower half
+            local Phi = acos(1 * (2*I-1)/Amount)# -- For higher half
+            local Theta = sqrt(Amount*_PI) * Phi
+            
+            local X = Origin:x()+Radius * sin(Phi) * cos(Theta)
+            local Y = Origin:y()+Radius * sin(Phi) * sin(Theta)
+            local Z = Origin:z()+Radius * cos(Phi)
+            
+            local Pos = vec(X,Y,Z)
+            holoPos(I, Pos)
+            
+            local InnerRadius = Radius * 0.75
+            
+            local X = Origin:x()+InnerRadius * sin(Phi) * cos(Theta)
+            local Y = Origin:y()+InnerRadius * sin(Phi) * sin(Theta)
+            local Z = Origin:z()+InnerRadius * cos(Phi)
+            
+            local Pos_Inner = vec(X,Y,Z)
+            holoPos(I+Amount*0.5, Pos_Inner)
+        }
+    }
+    
+    function placeEvenlySpacedFilledSphere(){
+        local Origin = entity():pos()
+        if( IsParent ){ Origin = Parent:pos() }
+        
+        local TotalPoints = 0
+        
+        local Amount = Amount*0.1
+        
+        for(I=1, Amount){
+            local Phi = acos(-1 + (2*I-1)/Amount)
+            for(J=1, Amount){
+                local Theta = 2*_PI*(J-1)/Amount
+                
+                local X = Origin:x()+Radius * sin(Phi) * cos(Theta)
+                local Y = Origin:y()+Radius * sin(Phi) * sin(Theta)
+                local Z = Origin:z()+Radius * cos(Phi)
+                
+                TotalPoints = TotalPoints+1
+                
+                local Pos = vec(X,Y,Z)
+                holoPos((I-1)*Amount+J, Pos)
+            }
+        }
+    }
+    
+    spawnHolo()
+    
+    if( IsReady ){ interval(500) }
+    
+}
+elseif( clk("HoloDelay") ){
+    spawnHolo()
+}
+elseif( clk() ){
+    if( HalfSphere ){
+        if( FillInside ){
+            placeEvenlySpacedFilledHalfSphere()
+        } else{
+            placeEvenlySpacedHalfSphere()
+        }
+    } else{
+        if( FillInside ){
+            placeEvenlySpacedFilledSphere()
+        } else{
+            placeEvenlySpacedSphere()
+        }
+    }
+}
