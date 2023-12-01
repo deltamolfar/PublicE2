@@ -6,6 +6,21 @@
 #@strict
 @model models/props_lab/blastdoor001c.mdl
 
+#[
+    Simple Blast Door. Open using +Use on the door.
+    Wire input isn't mandatory.
+    To let your friends open the door - spawn wire friendlist entity.
+    It will wire itself to friendlist entity automatically
+    
+    ###################################
+    ##      made by deltamolfar      ##
+    ##        Glory to Ukraine       ##
+    ###################################
+    
+    This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
+    If you change anything in this code, don't expect me to help you.
+]#
+
 if( first() || dupefinished() ){
     setMass(50000)
     
