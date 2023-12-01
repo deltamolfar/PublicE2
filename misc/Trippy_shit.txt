@@ -5,8 +5,17 @@
 @persist [OriginalPos Color]:vector Ang:angle
 #@strict
 
-# THIS E2 REQUIRES PAC3 TO FUNCTION
-# Just spawn it lol
+#[
+    Chip made for being fun to watch.
+    
+    ###################################
+    ##      made by deltamolfar      ##
+    ##        Glory to Ukraine       ##
+    ###################################
+    
+    This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
+    If you change anything in this code, don't expect me to help you.
+]#
 
 if(first()){
     GoingDown = 0
