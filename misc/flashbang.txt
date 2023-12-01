@@ -2,6 +2,18 @@
 @persist [SETTINGS Blindness]:table Grenade:entity
 #@strict
 
+#[
+    Chip made for being able to use flashbang. Required CS:S content in default configuration.
+    
+    ###################################
+    ##      made by deltamolfar      ##
+    ##        Glory to Ukraine       ##
+    ###################################
+    
+    This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
+    If you change anything in this code, don't expect me to help you.
+]#
+
 if( first() || duped() ){
     findIncludeClass("player")
     
