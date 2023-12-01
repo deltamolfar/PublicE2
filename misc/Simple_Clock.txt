@@ -8,7 +8,6 @@
     Chip made for being used as a clock.
     
     ###################################
-    ## Advanced Health System v1.2.1 ##
     ##      made by deltamolfar      ##
     ##        Glory to Ukraine       ##
     ###################################
