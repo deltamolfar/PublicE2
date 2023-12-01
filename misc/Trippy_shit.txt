@@ -1,0 +1,67 @@
+@name Trippy shit
+@inputs 
+@outputs 
+@persist ModelName:string HoloIndex HoloMaxAmount IsRainbow IsMoving GoingDown
+@persist [OriginalPos Color]:vector Ang:angle
+#@strict
+
+# THIS E2 REQUIRES PAC3 TO FUNCTION
+# Just spawn it lol
+
+if(first()){
+    GoingDown = 0
+    IsRainbow = 0
+    IsMoving = 2
+    OriginalPos = entity():pos()
+    ModelName = "models/pac/jiggle/base_jiggle_3.mdl"
+    Ang = ang(90,0,0)
+    HoloIndex = 1
+    HoloMaxAmount = holoMaxAmount()-holoAmount()
+    print(HoloMaxAmount)
+    Color=vec(190,190,190)
+    entity():propDrag(0)
+    entity():propGravity(0)
+    
+    timer("Redo", 50)
+}
+elseif(clk("Redo")){
+    while(holoCanCreate()){
+        Ang+=ang(0,(360/HoloMaxAmount),0)
+        holoCreate(HoloIndex)
+        holoModel(HoloIndex, ModelName)
+        holoPos(HoloIndex, entity():pos())
+        holoAng(HoloIndex, Ang)
+        holoColor(HoloIndex, Color)
+        if(IsRainbow){
+            local T = HoloIndex / (250-1)
+            local Red = 255*(1-T)
+            local Green = 255*min(1, max(0, (T-1/6)*6))
+            local Blue = 255*min(1, max(0, (T-2/6)*6))
+            
+            Color=vec(Red, Green, Blue)
+            }
+        holoParent(HoloIndex, entity())
+        HoloIndex++
+    }
+    
+    if(HoloIndex<HoloMaxAmount){timer("Redo", 500)}
+    elseif(IsMoving==1){timer("foo", 150)}
+    elseif(IsMoving==2){timer("angfoo", 150)}
+}
+elseif(clk("foo")){
+    local EntPos = entity():pos()
+    
+    if(GoingDown){
+        if(EntPos:z()<OriginalPos:z()-25){ GoingDown=0 }
+        entity():setPos(EntPos+vec(0,0,-5))
+    } else{
+        if(EntPos:z()>OriginalPos:z()+25){ GoingDown=1 }
+        entity():setPos(EntPos+vec(0,0,5))
+    }
+    
+    timer("foo", 150)
+}
+elseif(clk("angfoo")){
+    entity():setAng(entity():angles()+ang( randint(-15,15), randint(-15,15), randint(-15,15) ))
+    timer("angfoo", 150)
+}
