@@ -1,0 +1,247 @@
+@name Door-BlastDoor-Horizontal
+@inputs Open Close Lock AutoCloseDelay FriendList:array
+@outputs IsOpened IsLocked Health
+@persist [SOUND_Click SOUND_Locked SOUND_Opening SOUND_Opened SOUND_Closed]:string
+@persist OriginZ Range MaxHealth Animation_Z_Per50MS FreeToMove DefaultAutoCloseDelay AutoCloseDelayPersist
+#@strict
+@model models/props_lab/blastdoor001c.mdl
+
+if( first() || dupefinished() ){
+    setMass(50000)
+    
+    hint("To disable auto closing -> input '-1' to 'AutoCloseDelay' input.", 5)
+    hint("To drop auto closing delay to default -> input '0' to 'AutoCloseDelay' input.", 5)
+    hint("To set auto closing delay -> input 0.01->inf seconds to 'AutoCloseDelay' input.", 5)
+    hint("E2 Door made by deltamolfar", 5)
+    
+    SOUND_Click = "buttons/lever1.wav"
+    SOUND_Locked = ""
+    SOUND_Opening = "vehicles/crane/crane_extend_loop1.wav"
+    SOUND_Opened = "vehicles/crane/crane_magnet_release.wav"
+    SOUND_Closed = "vehicles/crane/crane_magnet_release.wav"
+    
+    FreeToMove = 1
+    Animation_Z_Per50MS = 4
+    IsOpened = 0
+    IsLocked = 0
+    MaxHealth = 15000
+    Health = MaxHealth
+    DefaultAutoCloseDelay = 5000
+    AutoCloseDelayPersist = DefaultAutoCloseDelay
+
+    OriginZ = entity():pos():z()
+    Range = 100 #-- recommended -> 100/150 range
+    
+    for(I=1, 2){
+        local TempEnt = holoCreate(I)
+        holoModel(I, "models/props_trainstation/pole_448Connection002b.mdl")
+        holoScale(I, vec(0.5,0.5,Range*0.005))
+        holoParent(I, entity())
+        holoAng(I, TempEnt:angles()+ang(0,90,0))
+    }
+    
+    holoPos(1, entity():pos()+entity():right()*85+vec(0,0,Range*0.95))
+    holoPos(2, entity():pos()+entity():right()*-85+vec(0,0,Range*0.95))
+    
+    
+    entity():constraintBreak()
+    if( !entity():isFrozen() ){ entity():propFreeze(1) }
+    entity():noCollideAll(0)
+    entity():setAng(ang(0,owner():eyeAngles():yaw(),0))
+    
+    timer("HoloDeparent", 100)
+    
+    function number isTimerRunning(Name:string){
+        foreach(_, V:string = getTimers()){
+            if( V==Name ){ return 1 }    
+        }
+        return 0
+    }
+    
+    function destroyAll(){
+        #ifdef effect()
+            local Effect = effect()
+            Effect:setOrigin(entity():pos())
+            Effect:setScale(0.25)
+        
+        Effect:play("eff_jack_gmod_faebomb_main")
+        #endif
+        entity():emitSound("<^phx/explode00.wav")
+        
+        selfDestruct()
+    }
+    
+    function self_open(){
+        OriginZ = entity():pos():z()
+        if( FreeToMove==0 ){
+            entity():emitSound(SOUND_Locked)
+            return
+        }
+        
+        FreeToMove = 0
+        entity():emitSound(SOUND_Opening)
+        timer("ANIM_Open", 50)
+    }
+    
+    function self_close(){
+        OriginZ = entity():pos():z()
+        if( FreeToMove==0 ){
+            entity():emitSound(SOUND_Locked)
+            return
+        }
+        
+        FreeToMove = 0
+        entity():emitSound(SOUND_Opening)
+        timer("ANIM_Close", 50)
+    }
+    
+    function self_lock(){
+
+    }
+    
+    function updateHP(){
+        entity():setName("Door-BlastDoor-Horizontal ("+floor(Health)+"/"+MaxHealth+")")
+    }
+    
+    updateHP()
+    
+    timer("Repair_Cycle", 500)
+}
+elseif( clk("ANIM_Open") ){
+    local EntPos = entity():pos()
+    
+    if( EntPos:z() < OriginZ+Range ){
+        entity():setPos(EntPos+vec(0,0,Animation_Z_Per50MS))
+        
+        timer("ANIM_Open", 50)
+    } else{
+        entity():setPos(vec(EntPos:x(), EntPos:y(), OriginZ+Range))
+        IsOpened = 1
+        entity():emitSoundStop(SOUND_Opening)
+        entity():emitSound(SOUND_Opened)
+        FreeToMove = 1
+        if( AutoCloseDelay!=-1 ){ timer("AutoClose", AutoCloseDelayPersist) }
+    }
+}
+elseif( clk("ANIM_Close") ){
+    local EntPos = entity():pos()
+    
+    if( EntPos:z() > OriginZ-Range ){
+        entity():setPos(EntPos-vec(0,0,Animation_Z_Per50MS))
+        
+        timer("ANIM_Close", 50)
+    } else{
+        entity():setPos(vec(EntPos:x(), EntPos:y(), OriginZ-Range))
+        IsOpened = 0
+        entity():emitSoundStop(SOUND_Opening)
+        entity():emitSound(SOUND_Closed)
+        FreeToMove = 1
+    }
+}
+elseif( clk("HoloDeparent") ){
+    for(I=1, 2){ holoUnparent(I) }
+}
+elseif( clk("Repair_Cycle") ){
+    if( !isTimerRunning("Repair_DownTime") && Health!=MaxHealth ){
+        Health = clamp(Health+500, 0, MaxHealth)
+        entity():emitSound("snds_jack_gmod/ez_tools/"+randint(1, 27)+".wav")
+        entity():emitSound("snds_jack_gmod/ez_tools/"+randint(1, 27)+".wav")
+        
+        #ifdef effect()
+            local Effect = effect()
+            Effect:setMagnitude(4)
+            Effect:setOrigin(randvec(entity():aabbWorldMin()+vec(0,0,20), entity():aabbWorldMax()+vec(0,0,20)))
+            
+            Effect:play("eff_jack_aidopen")
+        #endif
+        
+        updateHP()
+    }
+    
+    timer("Repair_Cycle", 500)
+}
+elseif( clk("AutoClose") && IsOpened ){
+    self_close()
+}
+
+
+event tick() {
+    entity():propFreeze(1)
+}
+
+event input(InputName:string) {
+    switch(InputName){
+        case "AutoCloseDelay",
+            if( AutoCloseDelay == 0 ){
+                AutoCloseDelayPersist = DefaultAutoCloseDelay
+            } elseif( AutoCloseDelay == -1 ){
+                AutoCloseDelayPersist = 0
+            } else{
+                AutoCloseDelayPersist = AutoCloseDelay*1000
+            }
+        break
+        case "Open",
+            if( Open && !IsLocked ){
+                self_open()
+            } else{
+                entity():emitSound(SOUND_Locked)
+            }
+        break
+        case "Close",
+            if( Close && !IsLocked ){
+                self_close()
+            } else{
+                entity():emitSound(SOUND_Locked)
+            }
+        break
+        case "Lock",
+            IsLocked = Lock
+        break    
+    }
+}
+
+event chipUsed(Player:entity) {
+    if( IsLocked ){
+        entity():emitSound(SOUND_Locked)
+        exit()
+    }
+    
+    local Legal = 0
+    
+    foreach(_, V:entity = FriendList){
+        if( Player==V ){ Legal = 1 break }
+    }
+    if( Player==owner() ){ Legal = 1 }
+    
+    if( Legal && FreeToMove ){
+        entity():emitSound(SOUND_Click)
+        
+        if( !IsOpened ){
+            self_open()
+        } else{
+            self_close()
+        }
+    }
+}
+
+event entityCreated(Entity:entity) {
+    if( !Entity:isValid() ){ exit() }
+    if( Entity:owner()!=owner() && Entity:type()!="gmod_wire_friendslist" ){ exit() }
+    
+    entity():createWire(Entity, "FriendList", "Friends")
+}
+
+event entityDamage(Victim:entity, Damage:damage) {
+    if( Victim==entity() ){
+        Health -= Damage:getAmount()
+        
+        timer("Repair_DownTime", 1000)
+        updateHP()
+        
+        if(Health<=0){ destroyAll() }
+    }
+}
+
+event removed(_:number) {
+    entity():emitSoundStop(SOUND_Opening)
+}
