@@ -1,0 +1,171 @@
+@name SimpleDoor v2 by deltamolfar
+@inputs DoorOverrideClk FriendList:array AnyoneCanOpen
+@outputs IsOpened
+@persist SETTINGS:table ClosedAng OpenedAng [Entity Handle]:entity
+@model models/props_c17/door01_left.mdl
+@strict
+
+if( first() || duped() ){
+    IsOpened = 0
+    Entity = entity()
+    
+    SETTINGS = table()
+    SETTINGS["Direction", number] = 1 # -- In which direction should the door open? (-1/1 only) !
+    SETTINGS["Reach", number] = 100 # -- How "far" should the door open?
+    SETTINGS["SpeedMult", number] = 50 # -- How fast should the door open? (The lesser the value, the faster door open, basically just an animation delay).
+    SETTINGS["AutoClose", number] = 0 # -- Should the door autoclose? (0/1) !
+    SETTINGS["AutoClose_Delay", number] = 5000 # -- After how much miliseconds asfter the door STARTED openning should the door close?
+    
+    SETTINGS["SOUND", table] = table()
+    SETTINGS["SOUND", table]["Move", string] = "doors/door1_move.wav" # -- Played when door is BEGINNING to open
+    SETTINGS["SOUND", table]["Move_Pitch", number] = 100
+    
+    SETTINGS["SOUND", table]["Full_Open", string] = "doors/door1_stop.wav" # -- Played when door is BEGINNING to open
+    SETTINGS["SOUND", table]["Full_Open_Pitch", number] = 100
+    
+    SETTINGS["SOUND", table]["Full_Close", string] = "doors/door_wood_close1.wav" # -- Played when door is BEGINNING to close
+    SETTINGS["SOUND", table]["Full_Close_Pitch", number] = 100
+    
+    SETTINGS["SOUND", table]["Locked", string] = "doors/door_locked2.wav" # -- Played when somebody that isn't owner, nor his friends is trying to open the door
+    SETTINGS["SOUND", table]["Locked_Pitch", number] = 100
+    
+    assert(SETTINGS["Direction", number]==-1 || SETTINGS["Direction", number]==1, "Direction can't be any then 1 or -1!")
+    assert(inrange(SETTINGS["AutoClose", number], 0, 1), "AutoClose can either be 0 or 1!")
+}
+
+#[function open(){
+    IsOpened = 1
+    Entity:emitSound(SETTINGS["SOUND", table]["Locked", string], 100, SETTINGS["SOUND", table]["Locked_Pitch", number])
+    timer("Animate", SETTINGS["SpeedMult", number])
+}
+
+function close(){
+    IsOpened = 0
+    Entity:emitSound(SETTINGS["SOUND", table]["Locked", string], 100, SETTINGS["SOUND", table]["Locked_Pitch", number])
+    timer("Animate", SETTINGS["SpeedMult", number])
+}]#
+
+function startHandleAnimation(IsLocked:number){
+    stoptimer("ANIMATION_HANDLE_Locked")
+    stoptimer("ANIMATION_HANDLE_Open")
+    
+    if( IsLocked ){
+        timer("ANIMATION_HANDLE_Locked", 100)
+    } else{
+        timer("ANIMATION_HANDLE_Open", 100)
+    }
+    
+    Handle["Iteration", number] = 0
+    Handle["Roll", number] = 0
+    holoAng(1, Entity:toWorld(ang(0,180,0)))
+}
+
+function switchDoorState(){
+    if( IsOpened ){
+        IsOpened = 0
+        stoptimer("AutoClose")
+    } else{
+        IsOpened = 1
+        if( SETTINGS["AutoClose", number] ){
+            timer("AutoClose", SETTINGS["AutoClose_Delay", number])
+        }
+    }
+    
+    startHandleAnimation(0)
+    Entity:emitSound(SETTINGS["SOUND", table]["Move", string], 100, SETTINGS["SOUND", table]["Move_Pitch", number])
+    timer("Animate", SETTINGS["SpeedMult", number])
+}
+
+function initDoor(){
+    Handle = holoCreate(1, Entity:toWorld(vec(0,42.75,-10.5)), vec(1), Entity:toWorld(ang(0,180,0)), vec4(255), "models/props/de_train/de_train_doorhandle_01.mdl")
+        holoParent(1, Entity)
+    holoCreate(2, Entity:toWorld(vec(0,42.75,-10.5)), vec(1), Entity:toWorld(ang(0,0,180)), vec4(255), "models/props/de_train/de_train_doorhandle_01.mdl")
+        holoParent(2, 1)
+}
+
+if( first() || dupefinished() ){
+    ClosedAng = entity():angles():yaw()
+    OpenedAng = ClosedAng+(SETTINGS["Reach", number]*SETTINGS["Direction", number])
+    
+    Entity:noCollideAll(0)
+    initDoor()
+}
+elseif( clk("Animate") ){
+    local DesiredAng = OpenedAng
+    local Bit = 10*SETTINGS["Direction", number]
+    
+    if( !IsOpened ){
+        DesiredAng = ClosedAng
+        Bit *= -1
+    }
+    
+    if( !inrange( entity():angles():yaw(), DesiredAng-abs(Bit)*1.5, DesiredAng+abs(Bit)*1.5 ) ){
+        Entity:setAng(Entity:toWorld(ang(0,Bit,0)))
+        timer("Animate", SETTINGS["SpeedMult", number])
+    }
+    else{
+        if( IsOpened ){
+            Entity:emitSound(SETTINGS["SOUND", table]["Full_Open", string], 100, SETTINGS["SOUND", table]["Full_Open_Pitch", number])
+        } else{
+            Entity:emitSound(SETTINGS["SOUND", table]["Full_Close", string], 100, SETTINGS["SOUND", table]["Full_Close_Pitch", number])
+        }
+        Entity:setAng(ang(0,DesiredAng,0))
+    }
+}
+elseif( clk("AutoClose") ){
+    if( IsOpened ){
+        switchDoorState()
+    }
+}
+elseif( clk("ANIMATION_HANDLE_Locked") ){
+    Handle["Iteration", number] = Handle["Iteration", number]+1
+    
+    if( Handle["Iteration", number]%2==0 ){
+        holoAng(1, Entity:toWorld(ang(0,180,0)))
+    } else{
+        holoAng(1, Entity:toWorld(ang(0,180,-10)))
+    }
+    
+    if( Handle["Iteration", number]<=8 ){ timer("ANIMATION_HANDLE_Locked", 100) }
+    else{ holoAng(1, Entity:toWorld(ang(0,180,0))) }
+}
+elseif( clk("ANIMATION_HANDLE_Open") ){
+    Handle["Iteration", number] = Handle["Iteration", number]+1
+    
+    if( Handle["Iteration", number]==1 ){
+        Handle["Roll", number] = -30
+    } elseif( Handle["Iteration", number]==5 ){
+        Handle["Roll", number] = 0
+    }
+    
+    holoAng(1, Entity:toWorld(ang(0,180,Handle["Roll", number])))
+    
+    if( Handle["Iteration", number]<=8 ){ timer("ANIMATION_HANDLE_Open", 100) }
+    else{ holoAng(1, Entity:toWorld(ang(0,180,0))) }
+}
+
+event chipUsed(Player:entity) {
+    local IsLegal = Player==owner() || AnyoneCanOpen
+    
+    if( !IsLegal ){
+        foreach(_:number, V:entity = FriendList){
+            if( Player==V ){
+                IsLegal = 1
+                break
+            }
+        }
+    }
+    
+    if( !IsLegal ){
+        entity():emitSound(SETTINGS["SOUND", table]["Locked", string], 100, SETTINGS["SOUND", table]["Locked_Pitch", number])
+        startHandleAnimation(1)
+        exit()
+    }
+    switchDoorState()
+}
+
+event input(InputName:string) {
+    if( InputName=="DoorOverrideClk" && DoorOverrideClk!=0 ){
+        switchDoorState()
+    }
+}
