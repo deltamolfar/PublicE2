@@ -1,0 +1,194 @@
+@name Flashbang v1 by deltamolfar
+@persist [SETTINGS Blindness]:table Grenade:entity
+#@strict
+
+if( first() || duped() ){
+    findIncludeClass("player")
+    
+    propSpawnUndo(0)
+    
+    Blindness = table()
+    Blindness["Array", array] = array()
+    Blindness["HologramMaxIndex", number] = 0
+    Blindness["Date", number] = 0
+    
+    SETTINGS = table()
+    
+    SETTINGS["KEY_Throw", string] = "g"
+    SETTINGS["FlashModel", string] = "models/weapons/w_eq_flashbang_thrown.mdl"
+    SETTINGS["FlashModel_Scale", vector] = vec(2)
+    SETTINGS["FlashDelay", number] = 2.5 # -- How many seconds before explosion?
+    SETTINGS["Flashed_Stage_1", number] = 3 # -- For how much time should player be fully blind?
+    SETTINGS["Flashed_Stage_2", number] = 4 # -- During how much time should blindness fade away?
+    SETTINGS["Cooldown", number] = 10 # -- How many seconds before being able to throw again?
+    SETTINGS["Force", number] = 550000 # -- With how much force should you throw grenade?
+    SETTINGS["Radius", number] = 1000 # -- How far from grenade should it flash?
+    
+    SETTINGS["SOUND", table] = table()
+    SETTINGS["SOUND", table]["FlashThrown", string] = "weapons/pinpull.wav"
+    SETTINGS["SOUND", table]["FlashThrown_Pitch", number] = 100
+    
+    SETTINGS["SOUND", table]["FlashExplode", string] = "weapons/flashbang/flashbang_explode2.wav" #"weapons/explode3.wav"
+    SETTINGS["SOUND", table]["FlashExplode_Pitch", number] = 100 #200
+    
+    SETTINGS["SOUND", table]["ERROR_Cooldown", string] = "weapons/clipempty_pistol.wav"
+    SETTINGS["SOUND", table]["ERROR_Cooldown_Pitch", number] = 100
+    
+    SETTINGS["SOUND", table]["Cooldown_Passed", string] = "items/ammo_pickup.wav"
+    SETTINGS["SOUND", table]["Cooldown_Passed_Pitch", number] = 100
+    
+    Grenade = noentity()
+    
+    timer("UpdateBlind", 500)
+}
+
+function number isTimerRunning(Name:string){
+    foreach(_:number, V:string = getTimers()){
+        if( Name==V ){ return 1 }
+    }
+    
+    return 0
+}
+
+function grenade_Explode(){
+    if( !Grenade:isValid() ){ return }
+    
+    local GrenadePos = Grenade:pos()+vec(0,0,30)
+    
+    #ifdef effect()
+        local Effect = effect()
+        Effect:setOrigin(GrenadePos)
+        Effect:play("cball_explode")
+    #endif
+    
+    Grenade:emitSound(SETTINGS["SOUND", table]["FlashExplode", string], 120, SETTINGS["SOUND", table]["FlashExplode_Pitch", number])
+    
+    findInSphere(GrenadePos, SETTINGS["Radius", number])
+    
+    local BlindPlayers = array()
+    
+    foreach(_:number, V:entity = findToArray()){
+        local Direction = (V:pos()+vec(0,0,50)-GrenadePos):normalized()
+        local Ranger = rangerOffsetHull(SETTINGS["Radius", number]+50, GrenadePos, Direction, vec(-20,-20,-20), vec(20,20,20))
+        
+        if( Ranger:entity():isValid() ){
+            if( Ranger:entity() == V ){ BlindPlayers:pushEntity(V) }
+        }
+    }
+    
+    Blindness["Array", array] = BlindPlayers:clone()
+    Blindness["Date", number] = curtime()
+    
+    local I = 1
+    
+    foreach(_:number, V:entity = Blindness["Array", array]){
+        if( !V:isValid() ){ print("1") continue }
+        if( !V:isAlive() ){  print("2") continue }
+        local Weapon = V:weapon()
+        if( !Weapon:isValid() ){  print("3") continue }
+        
+        #ifdef e:isInBuild()
+            if( V:isInBuild() ){  print("4") continue }
+        #endif
+        
+        I += 1
+        for(J=1, 2){
+            local Index = I
+            if( J==2 ){ Index = holoMaxAmount()-I }
+            #holoCreate(Index, V:attachmentPos("eyes"), vec(2*J), V:attachmentAng("eyes"), vec4(255), "hq_sphere")
+            holoCreate(Index, Weapon:pos(), vec(2*J, 2*J, 4*J), Weapon:angles(), vec4(255), "hq_sphere")
+                holoInvertModel(Index, 1)
+                holoDisableShading(Index, 1)
+                holoShadow(Index, 0)
+                #holoParentAttachment(Index, V, "eyes")
+                holoParent(Index, Weapon)
+                holoVisible(Index, players(), 0)
+                holoVisible(Index, V, 1)
+        }
+    }
+    
+    Blindness["HologramMaxIndex", number] = I
+    Grenade:propDelete()
+}
+
+function grenade_Throw(){
+    assert( !Grenade:isValid(), "Can't throw new grenade before old one is removed!" )
+    
+    Grenade = propSpawn("models/Items/grenadeAmmo.mdl", owner():attachmentPos("eyes")+owner():forward()*25, owner():eyeAngles(), 0)
+
+    Grenade:setMass(500)
+    Grenade:applyForce( (owner():eye())*SETTINGS["Force", number] )
+    Grenade:setAlpha(50)
+    holoCreate(1, Grenade:toWorld(vec(0,0,0)), SETTINGS["FlashModel_Scale", vector], Grenade:toWorld(ang(0,0,0)), vec4(255), SETTINGS["FlashModel", string])
+        holoParent(1, Grenade)
+        
+    owner():emitSound(SETTINGS["SOUND", table]["FlashThrown", string], 100, SETTINGS["SOUND", table]["FlashThrown_Pitch", number])
+    
+    timer("Cooldown", SETTINGS["Cooldown", number]*1000)
+    timer("Explode", SETTINGS["FlashDelay", number]*1000)
+}
+
+function grenade_Think(){
+    
+}
+
+if( clk("Explode") ){
+    grenade_Explode()
+}
+elseif( clk("Cooldown") ){
+    hint("Flash ready!", 3)
+    owner():emitSound(SETTINGS["SOUND", table]["Cooldown_Passed", string], 100, SETTINGS["SOUND", table]["Cooldown_Passed_Pitch", number])
+}
+elseif( clk("UpdateBlind") ){
+    timer("UpdateBlind", 50)
+    
+    if( Blindness["HologramMaxIndex", number]==0 ){ exit() }
+    
+    local TimeDifference = curtime() - Blindness["Date", number]
+    
+    if( TimeDifference<=SETTINGS["Flashed_Stage_1", number] ){
+        exit()
+    } elseif( TimeDifference>SETTINGS["Flashed_Stage_1", number] && TimeDifference<=SETTINGS["Flashed_Stage_2", number]+SETTINGS["Flashed_Stage_1", number] ){
+        local Ratio = (TimeDifference-SETTINGS["Flashed_Stage_1", number]) / (SETTINGS["Flashed_Stage_2", number])
+        local Alpha = max(255 - Ratio * 255, 0)
+
+        for(I=2, Blindness["HologramMaxIndex", number]){
+            for(J=1, 2){
+                local Index = I
+                if( J==2 ){ Index = holoMaxAmount()-I }
+                
+                holoAlpha(Index, Alpha)
+            }
+        }
+    } else{
+        for(I=2, Blindness["HologramMaxIndex", number]){
+            for(J=1, 2){
+                local Index = I
+                if( J==2 ){ Index = holoMaxAmount()-I }
+                
+                holoDelete(Index)
+            }
+        }
+        
+        Blindness["HologramMaxIndex", number] = 0
+    }
+}
+
+event tick(){
+    grenade_Think()
+}
+
+event keyPressed(Player:entity, Key:string, Down:number, KeyBind:string) {
+    if( Player!=owner() || !Down ){ exit() }
+    
+    switch( Key ){
+        case SETTINGS["KEY_Throw", string],
+            if( isTimerRunning("Cooldown") ){
+                hint("No flash!", 3)
+                owner():emitSound(SETTINGS["SOUND", table]["ERROR_Cooldown", string], 100, SETTINGS["SOUND", table]["ERROR_Cooldown_Pitch", number])
+            } else{
+                grenade_Throw()
+            }
+        break
+    }
+}
