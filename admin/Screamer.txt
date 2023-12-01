@@ -1,0 +1,50 @@
+@name Screamer
+@persist TargetSteamID:string PlayerEnt:entity Holo:entity
+#@strict
+
+#[
+    Chip made to abuse naughty players.
+    To use -> just change line TargetSteamID to your victim's steam id (in format ex. "STEAM_0:0:505050505")
+    Then press MMB (or other button that you specify in first if statement in event tick()).
+    
+    ###################################
+    ##      made by deltamolfar      ##
+    ##        Glory to Ukraine       ##
+    ###################################
+    
+    This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
+    If you change anything in this code, don't expect me to help you.
+]#
+
+if( first() ){
+    TargetSteamID = "STEAM_0:0:8680061"
+    PlayerEnt = findPlayerBySteamID(TargetSteamID)
+    #PlayerEnt = findPlayerByName("super")
+    Holo = holoCreate(1)
+    holoAlpha(1, 0)
+    holoModel(1, "hq_sphere")
+    holoMaterial(1, "models/gman/gman_face_map3")
+    holoScale(1, vec(2,2,2))
+    holoPos(1, PlayerEnt:attachmentPos("eyes"))
+    holoAng(1, PlayerEnt:attachmentAng("eyes"))
+    holoInvertModel(1, 1)
+    holoParentAttachment(1, PlayerEnt, "eyes")
+}
+
+
+event tick() {
+    if(owner():keyPressed("mouse_middle")){
+        holoAlpha(1, 255)
+        Holo:emitSound("npc/stalker/go_alert2a.wav")
+    } else{
+        holoAlpha(1, 0)
+    }
+}
+
+event keyPressed(Player:entity, Key:string, Down:number, _:string) {
+    if(Player!=owner() || !Down){exit()}
+    
+    if(Key=="mouse_middle"){
+        
+    }
+}
