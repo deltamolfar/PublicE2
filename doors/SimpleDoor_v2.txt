@@ -3,7 +3,19 @@
 @outputs IsOpened
 @persist SETTINGS:table ClosedAng OpenedAng [Entity Handle]:entity
 @model models/props_c17/door01_left.mdl
-@strict
+#@strict
+
+#[
+    Just a simple door.
+    
+    ###################################
+    ##      made by deltamolfar      ##
+    ##        Glory to Ukraine       ##
+    ###################################
+    
+    This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
+    If you change anything in this code, don't expect me to help you.
+]#
 
 if( first() || duped() ){
     IsOpened = 0
