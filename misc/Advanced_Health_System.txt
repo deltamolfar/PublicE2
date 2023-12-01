@@ -1,0 +1,220 @@
+@name deltamolfar's Public Advanced Health System v1.2.1
+@inputs Hitbox:entity#If you have a single hitbox - you can just wire it to this input.
+@inputs HitboxArray:array#If you have multiple hitbox entities - use adv. entity marker
+@inputs ReloadClk#Reloads the E2 (can be used, for example, to use same hitbox and same chip on "new" contraption
+@outputs Shield#Current Shield amount
+@outputs Health#Current Health amount
+@outputs IsDead#Is dead
+@outputs MaxShield#Maximum possible shield
+@outputs MaxHealth#Maximum possible health
+@outputs ShieldRegenClk#Number increments by one everytime shield gets regenerated (mainly useful for animations/sounds)
+@outputs HealthRegenClk#Number increments by one everytime shield gets regenerated (mainly useful for animations/sounds)
+@persist SETTINGS:table HITBOXES:array
+@strict
+
+#[
+    Chip made for setting up health and shield system for your drones/contraptions way easier.
+    
+    ###################################
+    ## Advanced Health System v1.2.1 ##
+    ##      made by deltamolfar      ##
+    ##        Glory to Ukraine       ##
+    ###################################
+    
+    This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
+    If you change anything in this code, don't expect me to help you.
+    
+]#
+
+function init(){
+    SETTINGS = table()
+    
+    #[
+        Should the chip find the props to count as hitbox by itself?
+        It will work by looking for entity/props constrains with Hitbox entity.
+        Be careful! Constraines INCLUDE the wirelinks, so, for example, the seat of the drone driver most likely be counted as a hitbox as well.
+        (It will act as a yes if the value is any number but a zero.)
+    ]#
+    SETTINGS["AUTODETECT", number] = 0
+    
+    #[
+        Should the chip crash once the health goes below zero?
+        (It will act as a yes if the value is any number but a zero.)
+        (If the SELFDEESTRUCT_MODE is non-zero, this will be ignored!)
+    ]#
+    SETTINGS["AUTOCRASH", number] = 0
+    
+    #[
+        Should the chip delete props/entities once health goes below zero?
+        0 -> No.
+        1 -> Only the props that are specified at the input.
+        2 -> Props that are specified at the input AND all constrained props to them (can accidently delete your base, if you constrain it poorly!)
+    ]#
+    SETTINGS["SELFDEESTRUCT_MODE", number] = 0  
+    
+    #[
+    Modify this to get different resistances to different types of damage.
+    Sometimes, addons uses another enums, so you wouldn't be able to edit ALL the damage types)
+    ]#
+    SETTINGS["RESISTANCE", table] = table(
+        _DMG_ACID = 1,
+        _DMG_AIRBOAT = 1,
+        _DMG_ALWAYSGIB = 1,
+        _DMG_BLAST = 1,
+        _DMG_BLAST_SURFACE = 1,
+        _DMG_BUCKSHOT = 1,
+        _DMG_BURN = 1,
+        _DMG_CLUB = 1,
+        _DMG_CRUSH = 1,
+        _DMG_DIRECT = 1,
+        _DMG_DISSOLVE = 1,
+        _DMG_DROWN = 1,
+        _DMG_DROWNRECOVER = 1,
+        _DMG_ENERGYBEAM = 1,
+        _DMG_FALL = 1,
+        _DMG_GENERIC = 1,
+        _DMG_MISSILEDEFENSE = 1,
+        _DMG_NERVEGAS = 1,
+        _DMG_NEVERGIB = 1,
+        _DMG_PARALYZE = 1,
+        _DMG_PHYSGUN = 1,
+        _DMG_PLASMA = 1,
+        _DMG_POISON = 1,
+        _DMG_PREVENT_PHYSICS_FORCE = 1,
+        _DMG_RADIATION = 1,
+        _DMG_REMOVENORAGDOLL = 1,
+        _DMG_SHOCK = 1,
+        _DMG_SLASH = 1,
+        _DMG_SLOWBURN = 1,
+        _DMG_SNIPER = 1,
+        _DMG_SONIC = 1,
+        _DMG_VEHICLE = 1
+    )
+    
+    # -- Your shield table
+    SETTINGS["SHIELD", table] = table(
+        "MAX" = 500, # How much should you have in total? (0 -> No shield)
+        "REGEN_DELAY" = 10000, # How fast should this be regenerated? (0 -> It shouldn't regen at all) (In miliseconds!)
+        "REGEN_AMOUNT" = 100, # How much should this regenerate per delay?
+        "REGEN_TIMEOUT" = 10000 # For how much time should the regeneration be delayed after getting damage?
+    )
+
+    # -- Your health table    
+    SETTINGS["HEALTH", table] = table(
+        "MAX" = 3000, # How much should you have in total?
+        "REGEN_DELAY" = 0, # How fast should this be regenerated? (0 -> It shouldn't regen at all) (In miliseconds!)
+        "REGEN_AMOUNT" = 100, # How much should this regenerate per delay?
+        "REGEN_TIMEOUT" = 60000 # For how much time should the regeneration be delayed after getting damage?
+    )
+    
+    # DO NOT TOUCH ANYTHINGG BELOW THIS LINE, UNLESS YOU REALLY KNOW WHAT YOU'RE DOING!
+    MaxShield = SETTINGS["SHIELD", table]["MAX", number]
+    MaxHealth = SETTINGS["HEALTH", table]["MAX", number]
+    Shield = MaxShield
+    Health = MaxHealth
+    ShieldRegenClk = 0
+    HealthRegenClk = 0
+    IsDead = 0
+    
+    if( SETTINGS["AUTODETECT", number] ){
+        HITBOXES = Hitbox:getConnectedEntities()
+        local LookupTable = invert(HITBOXES)
+        
+        foreach(_:number, V:entity = HitboxArray){
+            if( !LookupTable:exists(toString(V)) ){ HITBOXES:pushEntity(V) }
+            print("1")
+        }
+    } else{
+        HITBOXES:pushEntity(Hitbox)
+        HITBOXES = HitboxArray:clone()
+    }
+    
+    assert(inrange(SETTINGS["SELFDEESTRUCT_MODE", number], 0, 2), "SETTINGS[\"SELFDEESTRUCT_MODE\", number] should hold a value from 0 to 2!")
+}
+
+function end(){
+    if( SETTINGS["SELFDEESTRUCT_MODE", number]!=0 ){
+        Hitbox:propDelete()
+        foreach(_:number, V:entity = HitboxArray){
+            V:propDelete()
+        }
+        
+        if( SETTINGS["SELFDEESTRUCT_MODE", number]==2 ){
+            selfDestructAll()
+        }
+    }
+    
+    if( SETTINGS["AUTOCRASH", number] ){
+        assert(0, "Advanced Health System v1: Health reached zero!")
+    }
+    
+    Shield = 0
+    IsDead = 1
+    stoptimer("REGEN_SHIELD")
+    stoptimer("REGEN_HEALTH")
+}
+
+if( first() || duped() ){
+    SETTINGS = table()
+    
+    init()
+}
+elseif( clk("REGEN_SHIELD") ){
+    timer("REGEN_SHIELD", SETTINGS["SHIELD", table]["REGEN_DELAY", number])
+    if( Shield!=MaxShield ){
+        ShieldRegenClk++
+        Shield = clamp( Shield+SETTINGS["SHIELD", table]["REGEN_AMOUNT", number], 0, SETTINGS["SHIELD", table]["MAX", number])
+    }
+}
+elseif( clk("REGEN_HEALTH") ){
+    timer("REGEN_HEALTH", SETTINGS["HEALTH", table]["REGEN_DELAY", number])
+    if( Health!=MaxShield ){
+        HealthRegenClk++
+        Health = clamp( Health+SETTINGS["HEALTH", table]["REGEN_AMOUNT", number], 0, SETTINGS["HEALTH", table]["MAX", number])
+    }
+}
+
+event input(InputName:string) {
+    if( InputName=="ReloadClk" && ReloadClk!=0 ){
+        init()
+    }
+}
+
+event entityDamage(Victim:entity, Damage:damage) {
+    local IsLegal = 0
+    foreach(_:number, V:entity = HITBOXES){
+        if( Victim==V ){
+            IsLegal = 1
+            break
+        }
+    }
+    
+    if( IsLegal ){
+        local DamageAmount = Damage:getAmount()
+        
+        foreach(Key:number, _:number = SETTINGS["RESISTANCE", table]){
+            if( Damage:isType(Key) ){
+                DamageAmount *= SETTINGS["RESISTANCE", table][Key, number]
+            }
+        }
+    
+        if( Shield>0 ){
+            Shield = clamp( Shield-DamageAmount, 0, SETTINGS["SHIELD", table]["MAX", number])
+        } else{
+            Health = clamp( Health-DamageAmount, 0, SETTINGS["HEALTH", table]["MAX", number])
+        }
+        
+        if( Health<=0 ){ end() }
+        
+        stoptimer("REGEN_SHIELD")
+        stoptimer("REGEN_HEALTH")
+        
+        if( SETTINGS["SHIELD", table]["REGEN_DELAY", number]!=0 && SETTINGS["SHIELD", table]["REGEN_AMOUNT", number]!=0 ){
+            timer("REGEN_SHIELD", SETTINGS["SHIELD", table]["REGEN_TIMEOUT", number])
+        }
+        if( SETTINGS["HEALTH", table]["REGEN_DELAY", number]!=0 && SETTINGS["HEALTH", table]["REGEN_AMOUNT", number]!=0 ){
+            timer("REGEN_HEALTH", SETTINGS["HEALTH", table]["REGEN_TIMEOUT", number])
+        }
+    }
+}
+
