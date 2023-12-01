@@ -1,0 +1,41 @@
+if( first() ){
+    holoCreate(1)
+    holoPos(1, entity():pos()+vec(0,0,0))
+    holoColor(1, vec(255,0,0))
+    holoEntity(1):setTrails(8, 8, 128, "trails/laser", vec(255,0,0), 255)
+    holoCreate(2)
+    holoAlpha(2, 125)
+    
+    holoCreate(3)
+    holoPos(3, entity():pos()+vec(0,0,0))
+    holoColor(3, vec(255,255,0))
+    holoEntity(3):setTrails(8, 8, 128, "trails/laser", vec(255,255,0), 255)
+    
+    holoCreate(4)
+    holoPos(4, entity():pos()+vec(0,0,0))
+    holoColor(4, vec(0,255,0))
+    holoEntity(4):setTrails(8, 8, 128, "trails/laser", vec(0,255,0), 255)
+    
+    holoParent(2, entity())
+}
+
+interval(50)
+local Base = holoEntity(2)
+local Speed = 250
+local Radius = 100
+
+local Pos = Base:toWorld(ang(0,0,curtime()*Speed):up() * Radius)
+holoPos(1, Pos)
+
+local Pos = Base:toWorld(ang(0,curtime()*Speed,0):right() * Radius)
+holoPos(3, Pos)
+
+local Pos = Base:toWorld(ang(curtime()*Speed,0,0):forward() * Radius)
+holoPos(4, Pos)
+
+#[
+Explaination:
+1) Place entity at sufficient range
+2) It has to be already somewhat rotated/offseted (lines 3/10/15) in order to work
+3) Do toLocal/toWorld magic
+4) Bingo
