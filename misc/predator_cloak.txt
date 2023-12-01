@@ -1,0 +1,165 @@
+@name Predator Cloak Device v1 by deltamolfar
+@persist SETTINGS:table CloakOn CooldownHintRequested
+#@strict
+
+#[
+    Chip made to give you predator's cloaking device!
+    To use: press specified SETTINGS["CloakKey", string] key. (Default - k).
+    It will get disabled if - owner took damage/owner used a weapon.
+    
+    ###################################
+    ##      made by deltamolfar      ##
+    ##        Glory to Ukraine       ##
+    ###################################
+    
+    This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
+    If you change anything in this code, don't expect me to help you.
+]#
+
+if( first() || duped() ){
+    CloakOn = 0
+    CooldownHintRequested = 0
+    
+    SETTINGS = table()
+    SETTINGS["CloakKey", string] = "k"
+    SETTINGS["CloakMaterial", string] = "models/shadertest/predator"
+    SETTINGS["SOUND", table] = table(
+        "CLOAK_ENABLED" = "buttons/combine_button1.wav",
+        "CLOAK_ENABLED_PITCH" = 70,
+        "CLOAK_DISABLED" = "buttons/combine_button7.wav",
+        "CLOAK_DAMAGED" = "ambient/energy/zap1.wav",
+        "CLOAK_UNAVAILABLE" = "buttons/combine_button5.wav",
+        "CLOAK_RECHARGED" = ")weapons/crossbow/bolt_load1.wav"
+    )
+    SETTINGS["TIME", table] = table(
+        "COOLDOWN" = 5,
+        "TIMEOUT" = 15
+    )
+    
+    SETTINGS["LEGAL_WEAPONS", array] = array(
+        "weapon_physgun",
+        "weapon_physcannon",
+        "gmod_camera",
+        "weapon_medkit",
+        "weapon_armorkit",
+        "none",
+        "weapon_cat",
+        "laserpointer",
+        "remotecontroller",
+        "gmod_tool"
+    )
+}
+
+function number isTimerRunning(Name:string){
+    foreach(_:number, V:string = getTimers()){
+        if( Name==V ){ return 1 }
+    }
+    
+    return 0
+}
+
+function cloak(Number:number){
+    local EntitiesToCloak = array(owner())
+    foreach(_:number, V:entity = owner():weapons()){
+        EntitiesToCloak:pushEntity(V)
+    }
+    
+    if( Number ){
+        CloakOn = 1
+        foreach(_:number, V:entity = EntitiesToCloak){
+            V:setMaterial(SETTINGS["CloakMaterial", string])
+        }
+    } else{
+        CloakOn = 0
+        foreach(_:number, V:entity = EntitiesToCloak){
+            V:setMaterial("")
+        }
+    }
+}
+
+function number entity:holdingLegalWeapon(){
+    if( !This:isValid() ){ return 0 }
+    local Weapon = This:weapon()
+    if( !Weapon:isValid() ){ return 0 }
+    local WeaponType = Weapon:type()
+    
+    foreach(_:number, V:string = SETTINGS["LEGAL_WEAPONS", array]){
+        if( WeaponType==V ){ return 1 }
+    }
+    
+    return 0
+}
+
+event entityDamage(Victim:entity, Damage:damage) {
+    if( Victim!=owner() ){ exit() }
+    
+    hint("[CLOAK]: Cloak offline! Estimated restore time: "+(SETTINGS["TIME", table]["TIMEOUT", number]*1000)+" seconds", 5)
+    cloak(0)
+    owner():emitSound(SETTINGS["SOUND", table]["CLOAK_DAMAGED", string])
+    timer("TIMEOUT", SETTINGS["TIME", table]["TIMEOUT", number]*1000)
+}
+
+if( first() || dupefinished() ){
+    hint("Predator Cloak v1 made by deltamolfar", 7)
+    hint("To use: press "+SETTINGS["CloakKey", string], 7)
+    hint("Beware! On most servers this chip would be considered illegal!", 7)
+    hint("Glory to Ukraine!", 7)
+}
+elseif( clk("COOLDOWN") ){
+    if( isTimerRunning("TIMEOUT") || !CooldownHintRequested ){ exit() }
+    hint("[CLOAK]: Cloak is back online!", 5)
+    owner():emitSound(SETTINGS["SOUND", table]["CLOAK_RECHARGED", string])
+}
+elseif( clk("TIMEOUT") ){
+    hint("[CLOAK]: Cloak is back online!", 5)
+    owner():emitSound(SETTINGS["SOUND", table]["CLOAK_RECHARGED", string])
+}
+elseif( clk("WeaponFired") ){
+    hint("[CLOAK]: Cloak offline! Estimated restore time: "+(SETTINGS["TIME", table]["TIMEOUT", number]*1000)+" seconds", 5)
+    cloak(0)
+    owner():emitSound(SETTINGS["SOUND", table]["CLOAK_DAMAGED", string])
+    timer("TIMEOUT", SETTINGS["TIME", table]["TIMEOUT", number]*1000)
+}
+
+event weaponSwitched(Player:entity, OldWeapon:entity, NewWeapon:entity) {
+    if( Player!=owner() ){ exit() }
+    
+    stoptimer("WeaponFired")
+}
+
+event keyPressed(Player:entity, Key:string, Down:number, KeyBind:string) {
+    if( Player!=owner() || !Down ){ exit() }
+
+    if( Key==SETTINGS["CloakKey", string] ){
+        if( CloakOn ){
+            hint("[CLOAK]: Cloak disabled", 5)
+            cloak(0)
+            owner():emitSound(SETTINGS["SOUND", table]["CLOAK_DISABLED", string])
+            timer("COOLDOWN", SETTINGS["TIME", table]["COOLDOWN", number]*1000)
+        }
+        else{
+            if( !isTimerRunning("COOLDOWN") ){
+                if( !isTimerRunning("TIMEOUT") ){
+                    hint("[CLOAK]: Cloak enabled", 5)
+                    cloak(1)
+                    owner():emitSound(SETTINGS["SOUND", table]["CLOAK_ENABLED", string], 120, SETTINGS["SOUND", table]["CLOAK_ENABLED_PITCH", number])
+                } else{
+                    hint("[CLOAK]: Cloak is offline!", 5)
+                    owner():emitSound(SETTINGS["SOUND", table]["CLOAK_UNAVAILABLE", string])
+                }
+            } else{
+                CooldownHintRequested = 1
+                hint("[CLOAK]: Cloak is on cooldown!", 5)
+                owner():emitSound(SETTINGS["SOUND", table]["CLOAK_UNAVAILABLE", string])
+            }
+        }
+    } elseif( KeyBind=="attack" && CloakOn ){
+        if( !owner():holdingLegalWeapon() ){
+            timer("WeaponFired", 250)
+        }
+    }
+}
+
+event removed(Resetting:number) {
+    cloak(0)
+}
