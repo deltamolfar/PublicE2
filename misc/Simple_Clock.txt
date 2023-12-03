@@ -5,7 +5,7 @@
 @strict
 
 #[
-    Chip made for setting up health and shield system for your drones/contraptions way easier.
+    Chip made to show you time :)
     
     ###################################
     ##      made by deltamolfar      ##
