@@ -3,19 +3,7 @@
 @outputs IsOpened
 @persist SETTINGS:table ClosedAng OpenedAng [Entity Handle]:entity
 @model models/props_c17/door01_left.mdl
-#@strict
-
-#[
-    Just a simple door.
-    
-    ###################################
-    ##      made by deltamolfar      ##
-    ##        Glory to Ukraine       ##
-    ###################################
-    
-    This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
-    If you change anything in this code, don't expect me to help you.
-]#
+@strict
 
 if( first() || duped() ){
     IsOpened = 0
@@ -96,11 +84,26 @@ function initDoor(){
 }
 
 if( first() || dupefinished() ){
+    Entity:setAng(ang(0,Entity:angles():yaw(),0))
     ClosedAng = entity():angles():yaw()
+    while( 1 ){
+        if( ClosedAng>180 ){ ClosedAng-=180 }
+        elseif( ClosedAng<-180 ){ ClosedAng+=180 }
+        else{ break }
+    }
     OpenedAng = ClosedAng+(SETTINGS["Reach", number]*SETTINGS["Direction", number])
+    while( 1 ){
+        if( OpenedAng>180 ){ OpenedAng-=180 }
+        elseif( OpenedAng<-180 ){ OpenedAng+=180 }
+        else{ break }
+    }
+    print(ClosedAng, OpenedAng)
     
+    entity():propFreeze(1)
+    entity():constraintBreak("Weld")
     Entity:noCollideAll(0)
     initDoor()
+    #print(Entity:angles())
 }
 elseif( clk("Animate") ){
     local DesiredAng = OpenedAng
