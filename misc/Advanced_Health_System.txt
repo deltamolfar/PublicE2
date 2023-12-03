@@ -1,4 +1,4 @@
-@name deltamolfar's Public Advanced Health System v1.2.1
+@name deltamolfar's Public Advanced Health System v1.2.2
 @inputs Hitbox:entity#If you have a single hitbox - you can just wire it to this input.
 @inputs HitboxArray:array#If you have multiple hitbox entities - use adv. entity marker
 @inputs ReloadClk#Reloads the E2 (can be used, for example, to use same hitbox and same chip on "new" contraption
@@ -9,21 +9,21 @@
 @outputs MaxHealth#Maximum possible health
 @outputs ShieldRegenClk#Number increments by one everytime shield gets regenerated (mainly useful for animations/sounds)
 @outputs HealthRegenClk#Number increments by one everytime shield gets regenerated (mainly useful for animations/sounds)
-@persist SETTINGS:table HITBOXES:array
+@outputs
+@outputs SETTINGS:table HITBOXES:array
 @strict
 
 #[
     Chip made for setting up health and shield system for your drones/contraptions way easier.
     
     ###################################
-    ## Advanced Health System v1.2.1 ##
+    ## Advanced Health System v1.2.2 ##
     ##      made by deltamolfar      ##
     ##        Glory to Ukraine       ##
     ###################################
     
     This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
     If you change anything in this code, don't expect me to help you.
-    
 ]#
 
 function init(){
@@ -53,9 +53,11 @@ function init(){
     SETTINGS["SELFDEESTRUCT_MODE", number] = 0  
     
     #[
-    Modify this to get different resistances to different types of damage.
-    Sometimes, addons uses another enums, so you wouldn't be able to edit ALL the damage types)
+        Modify this to get different resistances to different types of damage.
+        Sometimes, addons uses another enums, so you wouldn't be able to edit ALL the damage types)
+        WILL NOT WORK WITHOUT DAMAGE(built in) EXTENSION!
     ]#
+
     SETTINGS["RESISTANCE", table] = table(
         _DMG_ACID = 1,
         _DMG_AIRBOAT = 1,
@@ -122,11 +124,10 @@ function init(){
         
         foreach(_:number, V:entity = HitboxArray){
             if( !LookupTable:exists(toString(V)) ){ HITBOXES:pushEntity(V) }
-            print("1")
         }
     } else{
-        HITBOXES:pushEntity(Hitbox)
         HITBOXES = HitboxArray:clone()
+        HITBOXES:pushEntity(Hitbox)
     }
     
     assert(inrange(SETTINGS["SELFDEESTRUCT_MODE", number], 0, 2), "SETTINGS[\"SELFDEESTRUCT_MODE\", number] should hold a value from 0 to 2!")
@@ -195,6 +196,7 @@ event entityDamage(Victim:entity, Damage:damage) {
         foreach(Key:number, _:number = SETTINGS["RESISTANCE", table]){
             if( Damage:isType(Key) ){
                 DamageAmount *= SETTINGS["RESISTANCE", table][Key, number]
+                break
             }
         }
     
@@ -217,4 +219,3 @@ event entityDamage(Victim:entity, Damage:damage) {
         }
     }
 }
-
