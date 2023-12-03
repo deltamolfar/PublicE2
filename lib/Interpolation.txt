@@ -1,0 +1,272 @@
+#[
+    This lib is made to make your life easier with using ready interpolations, most of which still doesn't exist in core E2.
+    
+    ###################################
+    ##           InterpLib           ##
+    ##      made by deltamolfar      ##
+    ##        Glory to Ukraine       ##
+    ###################################
+    
+    This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
+    If you change anything in this code, don't expect me to help you.
+]#
+
+#Linear interpolation
+function vector2 interp_Linear(VectorFrom:vector2, VectorTo:vector2, Progress:number){# ASD
+    Progress = clamp(Progress, 0, 1)
+    
+    local X = VectorFrom:x() + (VectorTo:x() - VectorFrom:x()) * Progress
+    local Y = VectorFrom:y() + (VectorTo:y() - VectorFrom:y()) * Progress
+    
+    return vec2(X,Y)
+}
+
+function vector interp_Linear(VectorFrom:vector, VectorTo:vector, Progress:number){
+    Progress = clamp(Progress, 0, 1)
+    
+    local R = VectorFrom:x() + (VectorTo:x() - VectorFrom:x()) * Progress
+    local G = VectorFrom:y() + (VectorTo:y() - VectorFrom:y()) * Progress
+    local B = VectorFrom:z() + (VectorTo:z() - VectorFrom:z()) * Progress
+    
+    return vec(R,G,B)
+}
+
+function vector4 interp_Linear(VectorFrom:vector4, VectorTo:vector4, Progress:number){
+    Progress = clamp(Progress, 0, 1)
+    
+    local R = VectorFrom:x() + (VectorTo:x() - VectorFrom:x()) * Progress
+    local G = VectorFrom:y() + (VectorTo:y() - VectorFrom:y()) * Progress
+    local B = VectorFrom:z() + (VectorTo:z() - VectorFrom:z()) * Progress
+    local A = VectorFrom:w() + (VectorTo:w() - VectorFrom:w()) * Progress
+    
+    return vec4(R,G,B, A)
+}
+
+#Nearest Neigbour (round interpolation)
+function vector2 interp_Round(VectorFrom:vector2, VectorTo:vector2, Progress:number){# ASD
+    Progress = clamp(Progress, 0, 1)
+    
+    if( Progress<0.5 ){ return VectorFrom }
+    else{ return VectorTo }
+}
+
+function vector interp_Round(VectorFrom:vector, VectorTo:vector, Progress:number){
+    Progress = clamp(Progress, 0, 1)
+    
+    if( Progress<0.5 ){ return VectorFrom }
+    else{ return VectorTo }
+}
+
+function vector4 interp_Round(VectorFrom:vector4, VectorTo:vector4, Progress:number){
+    Progress = clamp(Progress, 0, 1)
+    
+    if( Progress<0.5 ){ return VectorFrom }
+    else{ return VectorTo }
+}
+
+#Smoothstep interpolation
+function vector2 interp_SmoothStep(VectorFrom:vector2, VectorTo:vector2, Progress:number){# ASD
+    Progress = clamp(Progress, 0, 1)
+    
+    local T = (1 - cos(Progress*_PI))*0.5
+    
+    local X = VectorFrom:x() + (VectorTo:x() - VectorFrom:x()) * T
+    local Y = VectorFrom:y() + (VectorTo:y() - VectorFrom:y()) * T
+    
+    return vec2(X, Y)
+}
+
+function vector interp_SmoothStep(VectorFrom:vector, VectorTo:vector, Progress:number){
+    Progress = clamp(Progress, 0, 1)
+    
+    local T = (1 - cos(Progress*_PI))*0.5
+    
+    local R = VectorFrom:x() + (VectorTo:x() - VectorFrom:x()) * T
+    local G = VectorFrom:y() + (VectorTo:y() - VectorFrom:y()) * T
+    local B = VectorFrom:z() + (VectorTo:z() - VectorFrom:z()) * T
+    
+    return vec(R, G, B)
+}
+
+function vector4 interp_SmoothStep(VectorFrom:vector4, VectorTo:vector4, Progress:number){
+    Progress = clamp(Progress, 0, 1)
+    
+    local T = (1 - cos(Progress*_PI))*0.5
+    
+    local R = VectorFrom:x() + (VectorTo:x() - VectorFrom:x()) * T
+    local G = VectorFrom:y() + (VectorTo:y() - VectorFrom:y()) * T
+    local B = VectorFrom:z() + (VectorTo:z() - VectorFrom:z()) * T
+    local A = VectorFrom:w() + (VectorTo:w() - VectorFrom:w()) * T
+    
+    return vec4(R, G, B, A)
+}
+
+#Exponential interpolation
+function vector2 interp_Exponential(VectorFrom:vector2, VectorTo:vector2, Progress:number){# ASD
+    Progress = clamp(Progress, 0, 1)
+    
+    local T = Progress*Progress
+    
+    local X = VectorFrom:x() + (VectorTo:x() - VectorFrom:x()) * T
+    local Y = VectorFrom:y() + (VectorTo:y() - VectorFrom:y()) * T
+    
+    return vec2(X, Y)
+}
+
+function vector interp_Exponential(VectorFrom:vector, VectorTo:vector, Progress:number){
+    Progress = clamp(Progress, 0, 1)
+    
+    local T = Progress*Progress
+    
+    local R = VectorFrom:x() + (VectorTo:x() - VectorFrom:x()) * T
+    local G = VectorFrom:y() + (VectorTo:y() - VectorFrom:y()) * T
+    local B = VectorFrom:z() + (VectorTo:z() - VectorFrom:z()) * T
+    
+    return vec(R, G, B)
+}
+
+function vector4 interp_Exponential(VectorFrom:vector4, VectorTo:vector4, Progress:number){
+    Progress = clamp(Progress, 0, 1)
+    
+    local T = Progress*Progress
+    
+    local R = VectorFrom:x() + (VectorTo:x() - VectorFrom:x()) * T
+    local G = VectorFrom:y() + (VectorTo:y() - VectorFrom:y()) * T
+    local B = VectorFrom:z() + (VectorTo:z() - VectorFrom:z()) * T
+    local A = VectorFrom:w() + (VectorTo:w() - VectorFrom:w()) * T
+    
+    return vec4(R, G, B, A)
+}
+
+#Cubic interpolation
+function vector2 interp_Cubic(VectorFrom:vector2, VectorTo:vector2, Progress:number){# ASD
+    Progress = clamp(Progress, 0, 1)
+    
+    local T = Progress*Progress*(3-2*Progress)
+    
+    local X = VectorFrom:x() + (VectorTo:x() - VectorFrom:x()) * T
+    local Y = VectorFrom:y() + (VectorTo:y() - VectorFrom:y()) * T
+    
+    return vec2(X, Y)
+}
+
+function vector interp_Cubic(VectorFrom:vector, VectorTo:vector, Progress:number){
+    Progress = clamp(Progress, 0, 1)
+    
+    local T = Progress*Progress*(3-2*Progress)
+    
+    local R = VectorFrom:x() + (VectorTo:x() - VectorFrom:x()) * T
+    local G = VectorFrom:y() + (VectorTo:y() - VectorFrom:y()) * T
+    local B = VectorFrom:z() + (VectorTo:z() - VectorFrom:z()) * T
+    
+    return vec(R, G, B)
+}
+
+function vector4 interp_Cubic(VectorFrom:vector4, VectorTo:vector4, Progress:number){
+    Progress = clamp(Progress, 0, 1)
+    
+    local T = Progress*Progress*(3-2*Progress)
+    
+    local R = VectorFrom:x() + (VectorTo:x() - VectorFrom:x()) * T
+    local G = VectorFrom:y() + (VectorTo:y() - VectorFrom:y()) * T
+    local B = VectorFrom:z() + (VectorTo:z() - VectorFrom:z()) * T
+    local A = VectorFrom:w() + (VectorTo:w() - VectorFrom:w()) * T
+    
+    return vec4(R, G, B, A)
+}
+
+function vector2 interp(VectorFrom:vector2, VectorTo:vector2, Progress:number, Type:string){
+    switch( Type:lower() ){
+        case "lerp",
+        case "linear",
+        case "line",
+            return interp_Linear(VectorFrom, VectorTo, Progress)
+        
+        case "neigbour",
+        case "nearest",
+        case "nearestneigbour",
+        case "round",
+        case "rounded",
+            return interp_Round(VectorFrom, VectorTo, Progress)
+        
+        case "smooth",
+        case "smoothstep",
+            return interp_SmoothStep(VectorFrom, VectorTo, Progress)
+        
+        case "exp",
+        case "exponential",
+            return interp_Exponential(VectorFrom, VectorTo, Progress)
+        
+        case "cube",
+        case "cubic",
+            return interp_Cubic(VectorFrom, VectorTo, Progress)
+        
+        default, assert(0, "interp(xv2xv2ns): Unknown interpolation type \""+Type+"\". Accepted types: lerp/round/smoothstep/exponential/cubic")
+    }
+    
+    return vec2(0)
+}
+
+function vector interp(VectorFrom:vector, VectorTo:vector, Progress:number, Type:string){
+    switch( Type:lower() ){
+        case "lerp",
+        case "linear",
+        case "line",
+            return interp_Linear(VectorFrom, VectorTo, Progress)
+        
+        case "neigbour",
+        case "nearest",
+        case "nearestneigbour",
+        case "round",
+        case "rounded",
+            return interp_Round(VectorFrom, VectorTo, Progress)
+        
+        case "smooth",
+        case "smoothstep",
+            return interp_SmoothStep(VectorFrom, VectorTo, Progress)
+        
+        case "exp",
+        case "exponential",
+            return interp_Exponential(VectorFrom, VectorTo, Progress)
+        
+        case "cube",
+        case "cubic",
+            return interp_Cubic(VectorFrom, VectorTo, Progress)
+        
+        default, assert(0, "interp(xv2xv2ns): Unknown interpolation type \""+Type+"\". Accepted types: lerp/round/smoothstep/exponential/cubic")
+    }
+    
+    return vec(0)
+}
+
+function vector4 interp(VectorFrom:vector4, VectorTo:vector4, Progress:number, Type:string){
+    switch( Type:lower() ){
+        case "lerp",
+        case "linear",
+        case "line",
+            return interp_Linear(VectorFrom, VectorTo, Progress)
+        
+        case "neigbour",
+        case "nearest",
+        case "nearestneigbour",
+        case "round",
+        case "rounded",
+            return interp_Round(VectorFrom, VectorTo, Progress)
+        
+        case "smooth",
+        case "smoothstep",
+            return interp_SmoothStep(VectorFrom, VectorTo, Progress)
+        
+        case "exp",
+        case "exponential",
+            return interp_Exponential(VectorFrom, VectorTo, Progress)
+        
+        case "cube",
+        case "cubic",
+            return interp_Cubic(VectorFrom, VectorTo, Progress)
+        
+        default, assert(0, "interp(xv2xv2ns): Unknown interpolation type \""+Type+"\". Accepted types: lerp/round/smoothstep/exponential/cubic")
+    }
+    
+    return vec4(0)
+}
