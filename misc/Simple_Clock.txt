@@ -5,7 +5,7 @@
 @strict
 
 #[
-    Chip made for being used as a clock.
+    Chip made for setting up health and shield system for your drones/contraptions way easier.
     
     ###################################
     ##      made by deltamolfar      ##
