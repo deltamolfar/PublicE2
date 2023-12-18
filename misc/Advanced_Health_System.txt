@@ -1,4 +1,4 @@
-@name deltamolfar's Public Advanced Health System v1.2.2
+@name deltamolfar's Public Advanced Health System v1.2.3
 @inputs Hitbox:entity#If you have a single hitbox - you can just wire it to this input.
 @inputs HitboxArray:array#If you have multiple hitbox entities - use adv. entity marker
 @inputs ReloadClk#Reloads the E2 (can be used, for example, to use same hitbox and same chip on "new" contraption
@@ -17,7 +17,7 @@
     Chip made for setting up health and shield system for your drones/contraptions way easier.
     
     ###################################
-    ## Advanced Health System v1.2.2 ##
+    ## Advanced Health System v1.2.3 ##
     ##      made by deltamolfar      ##
     ##        Glory to Ukraine       ##
     ###################################
@@ -35,7 +35,7 @@ function init(){
         Be careful! Constraines INCLUDE the wirelinks, so, for example, the seat of the drone driver most likely be counted as a hitbox as well.
         (It will act as a yes if the value is any number but a zero.)
     ]#
-    SETTINGS["AUTODETECT", number] = 0
+    SETTINGS["AUTODETECT", number] = 1
     
     #[
         Should the chip crash once the health goes below zero?
@@ -47,10 +47,11 @@ function init(){
     #[
         Should the chip delete props/entities once health goes below zero?
         0 -> No.
-        1 -> Only the props that are specified at the input.
-        2 -> Props that are specified at the input AND all constrained props to them (can accidently delete your base, if you constrain it poorly!)
+        1 -> Only the this chip itself.
+        2 -> Only the props that are specified at the input.
+        3 -> Props that are specified at the input AND all constrained props to them (can accidently delete your base, if you constrain it poorly!)
     ]#
-    SETTINGS["SELFDEESTRUCT_MODE", number] = 0  
+    SETTINGS["SELFDEESTRUCT_MODE", number] = 1  
     
     #[
         Modify this to get different resistances to different types of damage.
@@ -93,20 +94,20 @@ function init(){
         _DMG_VEHICLE = 1
     )
     
+    # -- Your health table    
+    SETTINGS["HEALTH", table] = table(
+        "MAX" = 1000, # How much should you have in total?
+        "REGEN_DELAY" = 0, # How fast should this be regenerated? (0 -> It shouldn't regen at all) (In miliseconds!)
+        "REGEN_AMOUNT" = 100, # How much should this regenerate per delay?
+        "REGEN_TIMEOUT" = 60000 # For how much time should the regeneration be delayed after getting damage?
+    )
+    
     # -- Your shield table
     SETTINGS["SHIELD", table] = table(
         "MAX" = 500, # How much should you have in total? (0 -> No shield)
         "REGEN_DELAY" = 10000, # How fast should this be regenerated? (0 -> It shouldn't regen at all) (In miliseconds!)
         "REGEN_AMOUNT" = 100, # How much should this regenerate per delay?
         "REGEN_TIMEOUT" = 10000 # For how much time should the regeneration be delayed after getting damage?
-    )
-
-    # -- Your health table    
-    SETTINGS["HEALTH", table] = table(
-        "MAX" = 3000, # How much should you have in total?
-        "REGEN_DELAY" = 0, # How fast should this be regenerated? (0 -> It shouldn't regen at all) (In miliseconds!)
-        "REGEN_AMOUNT" = 100, # How much should this regenerate per delay?
-        "REGEN_TIMEOUT" = 60000 # For how much time should the regeneration be delayed after getting damage?
     )
     
     # DO NOT TOUCH ANYTHINGG BELOW THIS LINE, UNLESS YOU REALLY KNOW WHAT YOU'RE DOING!
@@ -134,28 +135,32 @@ function init(){
 }
 
 function end(){
-    if( SETTINGS["SELFDEESTRUCT_MODE", number]!=0 ){
-        Hitbox:propDelete()
-        foreach(_:number, V:entity = HitboxArray){
-            V:propDelete()
-        }
-        
-        if( SETTINGS["SELFDEESTRUCT_MODE", number]==2 ){
+    Shield = 0
+    IsDead = 1
+    stoptimer("REGEN_SHIELD")
+    stoptimer("REGEN_HEALTH")
+    
+    switch( SETTINGS["SELFDEESTRUCT_MODE", number] ){
+        case 1,
+            selfDestruct()
+        break
+        case 2,
+            Hitbox:propDelete()
+            foreach(_:number, V:entity = HitboxArray){
+                V:propDelete()
+            }
+        break
+        case 3,
             selfDestructAll()
-        }
+        break
     }
     
     if( SETTINGS["AUTOCRASH", number] ){
         assert(0, "Advanced Health System v1: Health reached zero!")
     }
-    
-    Shield = 0
-    IsDead = 1
-    stoptimer("REGEN_SHIELD")
-    stoptimer("REGEN_HEALTH")
 }
 
-if( first() || duped() ){
+if( first() || dupefinished() ){
     SETTINGS = table()
     
     init()
@@ -219,3 +224,4 @@ event entityDamage(Victim:entity, Damage:damage) {
         }
     }
 }
+
