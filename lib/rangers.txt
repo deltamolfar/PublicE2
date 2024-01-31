@@ -1,0 +1,90 @@
+#[
+    Just a bunch of useful ranger-required functions that I often use.
+    
+    ###################################
+    ##           InterpLib           ##
+    ##      made by deltamolfar      ##
+    ##        Glory to Ukraine       ##
+    ###################################
+    
+    This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
+    If you change anything in this code, don't expect me to help you.
+]#
+
+#Checks if said entity is behind world, if looked from Origin
+function number entity:isBehindWorld(Origin:vector){
+    if( !This:isValid() ){ return 0 }
+    
+    local TargetPos = This:pos()
+    rangerHitWater(0)
+    rangerHitEntities(0)
+    rangerIgnoreWorld(0)
+    local TempRanger = rangerOffset(TargetPos:distance(Origin), Origin, TargetPos-Origin)
+    
+    if( TempRanger:hitWorld() ){ return 1 }
+    return 0
+}
+
+#Checks if said entity is behind anything, if looked from Origin
+function number entity:isBehindSomething(Origin:vector, EntBlackList:array){
+    if( !This:isValid() ){ return 0 }
+    
+    local TargetPos = This:pos()
+    rangerHitWater(0)
+    rangerHitEntities(1)
+    rangerIgnoreWorld(0)
+    
+    rangerFilter(EntBlackList)
+    
+    local TempRanger = rangerOffset(TargetPos:distance(Origin)-15, Origin, TargetPos-Origin)
+    
+    if( TempRanger:hitWorld() ){ return 1 }
+    
+    local TempEnt = TempRanger:entity()
+    if( !TempEnt:isValid() ){ return 0 }
+    local TempEntType = TempEnt:type():lower()
+    if( TempEntType:find("player")==0 && TempEntType:find("sim_fphys")==0 && TempEntType:find("simfphys")==0 && TempEntType:find("lvs")==0  && TempEntType:find("seat")==0 && TempEntType:find("chair")==0 ){ return 1 }
+    
+    return 0
+}
+
+#Returns minimal X and Y of world. (vec2(-15000,-15000))
+function vector2 vector:getWorldMin(){
+    rangerHitEntities( 0 )
+    rangerHitWater( 0 )
+    rangerIgnoreWorld( 0 )
+    
+    local MinX = rangerOffset(99999, This, vec(-1,0,0)):pos():x()
+    local MinY = rangerOffset(99999, This, vec(0,-1,0)):pos():y()
+    
+    return vec2(MinX, MinY)
+}
+
+#Returns maximal X and Y of world. (vec2(15000,15000))
+function vector2 vector:getWorldMax(){
+    rangerHitEntities( 0 )
+    rangerHitWater( 0 )
+    rangerIgnoreWorld( 0 )
+    
+    local MaxX = rangerOffset(99999, This, vec(1,0,0)):pos():x()
+    local MaxY = rangerOffset(99999, This, vec(0,1,0)):pos():y()
+    
+    return vec2(MaxX, MaxY)
+}
+
+#Returns world's sky
+function number vector:getWorldHeight(){
+    rangerHitEntities( 0 )
+    rangerHitWater( 0 )
+    rangerIgnoreWorld( 0 )
+    
+    return rangerOffset(99999, This, vec(0,0,1)):pos():z()
+}
+
+function number getWorldHeight(){
+    rangerHitEntities( 0 )
+    rangerHitWater( 0 )
+    rangerIgnoreWorld( 0 )
+    
+    return rangerOffset(99999, entity():pos(), vec(0,0,1)):pos():z()
+}
