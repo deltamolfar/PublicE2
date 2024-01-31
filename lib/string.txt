@@ -1,0 +1,243 @@
+@persist LIB_STRING_INTERNAL_PrintOutTable:table
+
+#[
+    Just a bunch of useful string functions that I often use.
+    
+    ###################################
+    ##           InterpLib           ##
+    ##      made by deltamolfar      ##
+    ##        Glory to Ukraine       ##
+    ###################################
+    
+    This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
+    If you change anything in this code, don't expect me to help you.
+]#
+
+if( first() || duped() ){
+    LIB_STRING_INTERNAL_PrintOutTable = table(
+        "NOTIFICATION" = 0,
+        "IsFinished" = 1,
+        "START" = 0,
+        "MESSAGE_ARRAY" = array(),
+        "DELAY" = 50 # <- Static. If you want to, you can try to modify it (making this number too little will result in some messages not be sent).
+    )
+}
+
+function number isDigit(String:string){
+    local StrLen = String:length()
+    if( StrLen==0 ){ return 0 }
+    
+    local ASCII = 0
+    for(I=1, StrLen){
+        ASCII = toByte(String[I])
+        
+        if( ASCII<48 || ASCII > 57){ if( ASCII!=46 ){ return 0 } }
+    }
+    
+    return 1
+}
+
+function number string:isDigit(){
+    return isDigit(This)
+}
+
+function number isInt(String:string){
+    local StrLen = String:length()
+    if( StrLen==0 ){ return 0 }
+    
+    local ASCII = 0
+    for(I=1, StrLen){
+        ASCII = toByte(String[I])
+        
+        if( ASCII<48 || ASCII > 57){ return 0 }
+    }
+    
+    return 1
+}
+
+function number string:isInt(){
+    return isInt(This)
+}
+
+function number toByteSentence(String:string){
+    local NumberArr = array()
+    local Number = 1
+    
+    for(I=1, String:length()){
+        NumberArr:pushNumber(toByte(String[I]))
+    }
+    
+    foreach(_:number, V:number = NumberArr){
+        Number = Number * 1000 + V
+    }
+    
+    return Number
+}
+
+function string toCharSentence(Number:number){
+    local String = ""
+    local Number_Str = Number:toString()
+    
+    for(I=2, Number_Str:length(), 3){
+        local Group = Number_Str:sub(I, I+2)
+        for(J=1, 1){
+            if( Group[J]=="0" ){ Group:sub(2) }
+        }
+        
+        String += toChar(Group:toNumber())
+    }
+    
+    return String
+}
+
+function string formatAsTime(Time:number){
+    local Result = ""
+    if( Time==0 ){ return "N/A" }
+    
+    #Minutes
+    local Minutes = floor( Time/60 )
+    if( Minutes==0 ){
+        Result += "00"
+    }
+    elseif( Minutes<10 ){ 
+        Result += "0"
+        Result += Minutes+""
+    } elseif( Minutes>99 ){
+        Result += "99"
+    } else{
+        Result += Minutes+""
+    }
+    Result += ":"
+    
+    #Seconds
+    local Seconds = floor( Time-Minutes*60 )
+    if( Seconds==0 ){
+        Result += "00"
+    }
+    elseif( Seconds<10 ){ 
+        Result += "0"
+        Result += Seconds+""
+    } elseif( Seconds>99 ){
+        Result += "99"
+    } else{
+        Result += Seconds+""
+    }
+    
+    return Result
+}
+
+function string formatAsBool(Statement:number){
+    if( Statement<=0 ){
+        return "false"
+    } else{
+        return "true"
+    }
+}
+
+function string string:capitalizeFirst(){
+    local TempString = This[1]
+    
+    return TempString+This:sub(2)
+}
+
+function string string:deleteLetters(){
+    local New = ""
+    local ASCII = 0
+    local Char = ""
+    
+    for(I=1, This:length()){
+        Char = This[I]
+        ASCII = toByte(Char)
+        
+        if( ASCII<65 || ASCII>122 ){
+            New += Char
+        }
+    }
+    
+    return New
+}
+
+function number string:toNumberForced(){
+    This = This:trim()
+    
+    local New = ""
+    local ASCII = 0
+    local Char = ""
+    
+    for(I=1, This:length()){
+        Char = This[I]
+        ASCII = toByte(Char)
+        
+        if( (ASCII>=48 && ASCII<=57) || ASCII==46 ){
+            New += Char
+        }
+    }
+    
+    return New:toNumber()
+}
+
+function vector string:toVector(){
+    local NewArray = array()
+
+    foreach(I:number, V:string = This:explode(",")){
+        NewArray[I, number] = V:toNumberForced()
+    }
+    
+    return vec(NewArray[1, number], NewArray[2, number], NewArray[3, number])
+}
+
+function lib_string_internal_consolePrintoutClk(){
+    if( LIB_STRING_INTERNAL_PrintOutTable["MESSAGE_ARRAY", array]:count()==0 ){
+        LIB_STRING_INTERNAL_PrintOutTable["IsFinished", number] = 1
+        print(_HUD_PRINTCONSOLE, "-----=====[ Print out finished. Powered by deltamolfar ]=====-----\n\n")
+        
+        if( LIB_STRING_INTERNAL_PrintOutTable["NOTIFICATION", number] ){
+            hint("Console printout finished! (Check console)", 7)
+        }
+    } else{
+        local CurrentMessage = LIB_STRING_INTERNAL_PrintOutTable["MESSAGE_ARRAY", array][1, string]
+        LIB_STRING_INTERNAL_PrintOutTable["MESSAGE_ARRAY", array]:removeString(1)
+        
+        if( CurrentMessage=="" && LIB_STRING_INTERNAL_PrintOutTable["MESSAGE_ARRAY", array]:count()>0 ){
+            lib_string_internal_consolePrintoutClk()
+            exit()
+        }
+        
+        print(_HUD_PRINTCONSOLE, CurrentMessage)
+        timer("LIB_STRING_INTERNAL_TIMER_PrintConsoleClk", LIB_STRING_INTERNAL_PrintOutTable["DELAY", number])
+    }
+}
+
+# This function will print out each string of array to owner's console. It will return 0, if this function already prints out some information, 1 in another case.
+function number array:printToConsole(){
+    if( LIB_STRING_INTERNAL_PrintOutTable["IsFinished", number]==0 ){ return 0 }
+    
+    LIB_STRING_INTERNAL_PrintOutTable["IsFinished", number] = 0
+    LIB_STRING_INTERNAL_PrintOutTable["START", number] = curtime()
+    LIB_STRING_INTERNAL_PrintOutTable["MESSAGE_ARRAY", array] = This
+    LIB_STRING_INTERNAL_PrintOutTable["NOTIFICATION", number] = 0
+
+    print(_HUD_PRINTCONSOLE, "\n\n-----=====[ Print out started. Estimated printout time: "+LIB_STRING_INTERNAL_PrintOutTable["DELAY", number]*(This:count()+1)*0.001+"s ]=====-----")
+    
+    timer("LIB_STRING_INTERNAL_TIMER_PrintConsoleClk", LIB_STRING_INTERNAL_PrintOutTable["DELAY", number])
+    return 1
+}
+
+function number printToConsole(Arr:array){
+    return Arr:printToConsole()
+}
+
+function number array:printToConsoleNotify(){
+    local N = This:printToConsole()
+    LIB_STRING_INTERNAL_PrintOutTable["NOTIFICATION", number] = 1
+    
+    return N
+}
+
+function number printToConsoleNotify(Arr:array){
+    return Arr:printToConsoleNotify()
+}
+
+if( clk("LIB_STRING_INTERNAL_TIMER_PrintConsoleClk") ){
+    lib_string_internal_consolePrintoutClk()
+}
