@@ -1,0 +1,87 @@
+@name CarSpamLol
+@persist SETTINGS:table ArrayToRemove:array
+@strict
+
+if( first() || dupefinished() ){
+    propSpawnUndo(0)
+    
+    ArrayToRemove = array()
+    SETTINGS = table(
+        "KEY" = "mouse_middle",
+        "MODELS" = array(
+            "models/props_vehicles/car002a_physics.mdl",
+            "models/props_vehicles/car002b_physics.mdl",
+            "models/props_vehicles/car003a_physics.mdl",
+            "models/props_vehicles/car003b_physics.mdl",
+            "models/props_vehicles/car004a_physics.mdl",
+            "models/props_vehicles/car004b_physics.mdl",
+            "models/props_vehicles/car005a_physics.mdl",
+            "models/props_vehicles/car005b_physics.mdl"
+            
+            #"models/props_junk/sawblade001a.mdl"
+            #"models/props_junk/gascan001a.mdl"
+            #"models/props_junk/harpoon002a.mdl"
+        ),
+        "FORCE" = 5000000,
+        "SpawnSound" = "",
+        "DespawnDelay" = 5
+    )
+    
+    interval(250)
+}
+
+function spawnCar(IgnoreWarning:number){
+    if( !propCanCreate() ){ if(!IgnoreWarning){hint("Can't spam vehicles so fast, please wait!", 6)} exit() }
+    
+    local Model = SETTINGS["MODELS", array][randint(1, SETTINGS["MODELS", array]:count()), string]
+
+    local Ent = propSpawn(Model, owner():pos()+vec(0,0,140), owner():eyeAngles(), 0)
+    Ent:emitSound(SETTINGS["SpawnSound", string])
+    Ent["SpawnDate", number] = curtime()
+    ArrayToRemove:pushEntity(Ent)
+    Ent:applyForce(owner():eye()*SETTINGS["FORCE", number])
+    
+    if( randint(1,4)==4 ){ Ent:ignite() }
+}
+
+if( clk() ){
+    interval(250)
+    
+    local TempArray = array()
+    
+    foreach(I:number, V:entity = ArrayToRemove){
+        if( V["SpawnDate", number]+SETTINGS["DespawnDelay", number]<curtime() ){ try{V:propDelete()}catch(_:string){} TempArray:pushNumber(I) }
+    }
+    
+    foreach(_:number, V:number = TempArray){
+        ArrayToRemove:removeEntity(V)
+    }
+    
+    if( owner():keyPressed(SETTINGS["KEY", string]) ){
+        spawnCar(1)
+    }
+}
+
+#[event tick() {
+    local TempArray = array()
+    
+    foreach(I:number, V:entity = ArrayToRemove){
+        if( V["SpawnDate", number]+SETTINGS["DespawnDelay", number]<curtime() ){ V:propDelete() TempArray:pushNumber(I) }
+    }
+    
+    foreach(_:number, V:number = TempArray){
+        ArrayToRemove:removeEntity(V)
+    }
+    
+    if( owner():keyPressed(SETTINGS["KEY", string]) ){
+        spawnCar()
+    }
+}]#
+
+event keyPressed(Player:entity, Key:string, Down:number, KeyBind:string) {
+    if( Player!=owner() || !Down ){ exit() }
+    
+    if( Key==SETTINGS["KEY", string] ){
+        spawnCar(0)
+    }
+}
