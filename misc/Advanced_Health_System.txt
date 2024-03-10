@@ -1,4 +1,4 @@
-@name deltamolfar's Public Advanced Health System v1.2.3
+@name deltamolfar's Public Advanced Health System v1.2.5
 @inputs Hitbox:entity#If you have a single hitbox - you can just wire it to this input.
 @inputs HitboxArray:array#If you have multiple hitbox entities - use adv. entity marker
 @inputs ReloadClk#Reloads the E2 (can be used, for example, to use same hitbox and same chip on "new" contraption
@@ -15,9 +15,15 @@
 
 #[
     Chip made for setting up health and shield system for your drones/contraptions way easier.
+    To use:
+    1) Input the Hitbox entity, that will act as a main damage receiving prop/entity
+    2) Input HitboxArray using adv. Entity Marker to also tell this E2 which other props/entities should act as damage receiving props/entities
+    2.1) Alternatively you can ignore HitboxArray, and try to use SETTINGS["AUTODETECT", number] = 1 (read info above it)
+    3) Make config suit you
+    4) Use Health/Shield/IsDead outputs as you want
     
     ###################################
-    ## Advanced Health System v1.2.3 ##
+    ## Advanced Health System v1.2.5 ##
     ##      made by deltamolfar      ##
     ##        Glory to Ukraine       ##
     ###################################
@@ -35,7 +41,7 @@ function init(){
         Be careful! Constraines INCLUDE the wirelinks, so, for example, the seat of the drone driver most likely be counted as a hitbox as well.
         (It will act as a yes if the value is any number but a zero.)
     ]#
-    SETTINGS["AUTODETECT", number] = 1
+    SETTINGS["AUTODETECT", number] = 0
     
     #[
         Should the chip crash once the health goes below zero?
@@ -51,66 +57,70 @@ function init(){
         2 -> Only the props that are specified at the input.
         3 -> Props that are specified at the input AND all constrained props to them (can accidently delete your base, if you constrain it poorly!)
     ]#
-    SETTINGS["SELFDEESTRUCT_MODE", number] = 1  
+    SETTINGS["SELFDEESTRUCT_MODE", number] = 0  
     
     #[
         Modify this to get different resistances to different types of damage.
         Sometimes, addons uses another enums, so you wouldn't be able to edit ALL the damage types)
         WILL NOT WORK WITHOUT DAMAGE(built in) EXTENSION!
     ]#
-
     SETTINGS["RESISTANCE", table] = table(
-        _DMG_ACID = 1,
-        _DMG_AIRBOAT = 1,
+        _DMG_ACID = 0.1,
+        _DMG_AIRBOAT = 0.75,
         _DMG_ALWAYSGIB = 1,
-        _DMG_BLAST = 1,
+        _DMG_BLAST = 0.9,
         _DMG_BLAST_SURFACE = 1,
-        _DMG_BUCKSHOT = 1,
-        _DMG_BURN = 1,
+        _DMG_BUCKSHOT = 0.35,
+        _DMG_BURN = 0.3,
         _DMG_CLUB = 1,
-        _DMG_CRUSH = 1,
+        _DMG_CRUSH = 1.5,
         _DMG_DIRECT = 1,
         _DMG_DISSOLVE = 1,
-        _DMG_DROWN = 1,
-        _DMG_DROWNRECOVER = 1,
-        _DMG_ENERGYBEAM = 1,
-        _DMG_FALL = 1,
+        _DMG_DROWN = 0,
+        _DMG_DROWNRECOVER = 0,
+        _DMG_ENERGYBEAM = 1.25,
+        _DMG_FALL = 0,
         _DMG_GENERIC = 1,
         _DMG_MISSILEDEFENSE = 1,
-        _DMG_NERVEGAS = 1,
-        _DMG_NEVERGIB = 1,
+        _DMG_NERVEGAS = 0.1,
+        _DMG_NEVERGIB = 0.1,
         _DMG_PARALYZE = 1,
         _DMG_PHYSGUN = 1,
         _DMG_PLASMA = 1,
-        _DMG_POISON = 1,
+        _DMG_POISON = 0.05,
         _DMG_PREVENT_PHYSICS_FORCE = 1,
-        _DMG_RADIATION = 1,
+        _DMG_RADIATION = 0.05,
         _DMG_REMOVENORAGDOLL = 1,
         _DMG_SHOCK = 1,
-        _DMG_SLASH = 1,
-        _DMG_SLOWBURN = 1,
-        _DMG_SNIPER = 1,
+        _DMG_SLASH = 0.9,
+        _DMG_SLOWBURN = 0.3,
+        _DMG_SNIPER = 1.5,
         _DMG_SONIC = 1,
         _DMG_VEHICLE = 1
     )
     
     # -- Your health table    
     SETTINGS["HEALTH", table] = table(
-        "MAX" = 1000, # How much should you have in total?
-        "REGEN_DELAY" = 0, # How fast should this be regenerated? (0 -> It shouldn't regen at all) (In miliseconds!)
-        "REGEN_AMOUNT" = 100, # How much should this regenerate per delay?
-        "REGEN_TIMEOUT" = 60000 # For how much time should the regeneration be delayed after getting damage?
+        "MAX" = 2900, # How much should you have in total?
+        "REGEN_DELAY" = 10, # How fast should this be regenerated? (0 -> It shouldn't regen at all) (In miliseconds!)
+        "REGEN_AMOUNT" = 0.5, # How much should this regenerate per delay?
+        "REGEN_TIMEOUT" = 25000 # For how much time should the regeneration be delayed after getting damage?  (In miliseconds!)
     )
     
     # -- Your shield table
     SETTINGS["SHIELD", table] = table(
-        "MAX" = 500, # How much should you have in total? (0 -> No shield)
-        "REGEN_DELAY" = 10000, # How fast should this be regenerated? (0 -> It shouldn't regen at all) (In miliseconds!)
-        "REGEN_AMOUNT" = 100, # How much should this regenerate per delay?
-        "REGEN_TIMEOUT" = 10000 # For how much time should the regeneration be delayed after getting damage?
+        "MAX" = 3100, # How much should you have in total? (0 -> No shield)
+        "REGEN_DELAY" = 10, # How fast should this be regenerated? (0 -> It shouldn't regen at all) (In miliseconds!)
+        "REGEN_AMOUNT" = 10, # How much should this regenerate per delay?
+        "REGEN_TIMEOUT" = 10000 # For how much time should the regeneration be delayed after getting damage?  (In miliseconds!)
     )
     
-    # DO NOT TOUCH ANYTHINGG BELOW THIS LINE, UNLESS YOU REALLY KNOW WHAT YOU'RE DOING!
+    SETTINGS["NO_DAMAGE_DELAY", number] = 25 # How many miniseconds should be between getting new damage? (The more the timer - the more time you will be invincible after a damage)
+    
+    # -------------------- ------------------------------------------------------------------------------------------------------
+    # -------------------- DO NOT TOUCH ANYTHINGG BELOW THIS LINE, UNLESS YOU REALLY KNOW WHAT YOU'RE DOING! --------------------
+    # -------------------- ------------------------------------------------------------------------------------------------------
+    
     MaxShield = SETTINGS["SHIELD", table]["MAX", number]
     MaxHealth = SETTINGS["HEALTH", table]["MAX", number]
     Shield = MaxShield
@@ -131,7 +141,11 @@ function init(){
         HITBOXES:pushEntity(Hitbox)
     }
     
-    assert(inrange(SETTINGS["SELFDEESTRUCT_MODE", number], 0, 2), "SETTINGS[\"SELFDEESTRUCT_MODE\", number] should hold a value from 0 to 2!")
+    assert(inrange(SETTINGS["SELFDEESTRUCT_MODE", number], 0, 3), "SETTINGS[\"SELFDEESTRUCT_MODE\", number] should hold a value from 0 to 3!")
+}
+
+function number isTimerRunning(Name:string){
+    return invert( getTimers() ):exists(Name)
 }
 
 function end(){
@@ -195,33 +209,35 @@ event entityDamage(Victim:entity, Damage:damage) {
         }
     }
     
-    if( IsLegal ){
-        local DamageAmount = Damage:getAmount()
-        
-        foreach(Key:number, _:number = SETTINGS["RESISTANCE", table]){
-            if( Damage:isType(Key) ){
-                DamageAmount *= SETTINGS["RESISTANCE", table][Key, number]
-                break
-            }
-        }
+    if( !IsLegal || isTimerRunning("NO_DAMAGE_DELAY") ){ exit() }
     
-        if( Shield>0 ){
-            Shield = clamp( Shield-DamageAmount, 0, SETTINGS["SHIELD", table]["MAX", number])
-        } else{
-            Health = clamp( Health-DamageAmount, 0, SETTINGS["HEALTH", table]["MAX", number])
-        }
-        
-        if( Health<=0 ){ end() }
-        
-        stoptimer("REGEN_SHIELD")
-        stoptimer("REGEN_HEALTH")
-        
-        if( SETTINGS["SHIELD", table]["REGEN_DELAY", number]!=0 && SETTINGS["SHIELD", table]["REGEN_AMOUNT", number]!=0 ){
-            timer("REGEN_SHIELD", SETTINGS["SHIELD", table]["REGEN_TIMEOUT", number])
-        }
-        if( SETTINGS["HEALTH", table]["REGEN_DELAY", number]!=0 && SETTINGS["HEALTH", table]["REGEN_AMOUNT", number]!=0 ){
-            timer("REGEN_HEALTH", SETTINGS["HEALTH", table]["REGEN_TIMEOUT", number])
+    local DamageAmount = Damage:getAmount()
+    
+    foreach(Key:number, _:number = SETTINGS["RESISTANCE", table]){
+        if( Damage:isType(Key) ){
+            DamageAmount *= SETTINGS["RESISTANCE", table][Key, number]
+            break
         }
     }
+
+    if( Shield>0 ){
+        Shield = clamp( Shield-DamageAmount, 0, SETTINGS["SHIELD", table]["MAX", number])
+    } else{
+        Health = clamp( Health-DamageAmount, 0, SETTINGS["HEALTH", table]["MAX", number])
+    }
+    
+    if( Health<=0 ){ end() }
+    
+    stoptimer("REGEN_SHIELD")
+    stoptimer("REGEN_HEALTH")
+    
+    if( SETTINGS["SHIELD", table]["REGEN_DELAY", number]!=0 && SETTINGS["SHIELD", table]["REGEN_AMOUNT", number]!=0 ){
+        timer("REGEN_SHIELD", SETTINGS["SHIELD", table]["REGEN_TIMEOUT", number])
+    }
+    if( SETTINGS["HEALTH", table]["REGEN_DELAY", number]!=0 && SETTINGS["HEALTH", table]["REGEN_AMOUNT", number]!=0 ){
+        timer("REGEN_HEALTH", SETTINGS["HEALTH", table]["REGEN_TIMEOUT", number])
+    }
+    
+    timer("NO_DAMAGE_DELAY", SETTINGS["NO_DAMAGE_DELAY", number])
 }
 
