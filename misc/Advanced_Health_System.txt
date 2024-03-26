@@ -1,4 +1,4 @@
-@name deltamolfar's Public Advanced Health System v1.2.5
+@name deltamolfar's Public Advanced Health System v1.2.6
 @inputs Hitbox:entity#If you have a single hitbox - you can just wire it to this input.
 @inputs HitboxArray:array#If you have multiple hitbox entities - use adv. entity marker
 @inputs ReloadClk#Reloads the E2 (can be used, for example, to use same hitbox and same chip on "new" contraption
@@ -9,8 +9,8 @@
 @outputs MaxHealth#Maximum possible health
 @outputs ShieldRegenClk#Number increments by one everytime shield gets regenerated (mainly useful for animations/sounds)
 @outputs HealthRegenClk#Number increments by one everytime shield gets regenerated (mainly useful for animations/sounds)
-@outputs
-@outputs SETTINGS:table HITBOXES:array
+
+@persist SETTINGS:table HITBOXES:array
 @strict
 
 #[
@@ -23,7 +23,7 @@
     4) Use Health/Shield/IsDead outputs as you want
     
     ###################################
-    ## Advanced Health System v1.2.5 ##
+    ## Advanced Health System v1.2.6 ##
     ##      made by deltamolfar      ##
     ##        Glory to Ukraine       ##
     ###################################
@@ -65,53 +65,53 @@ function init(){
         WILL NOT WORK WITHOUT DAMAGE(built in) EXTENSION!
     ]#
     SETTINGS["RESISTANCE", table] = table(
-        _DMG_ACID = 0.1,
-        _DMG_AIRBOAT = 0.75,
+        _DMG_ACID = 1,
+        _DMG_AIRBOAT = 1,
         _DMG_ALWAYSGIB = 1,
-        _DMG_BLAST = 0.9,
+        _DMG_BLAST = 1,
         _DMG_BLAST_SURFACE = 1,
-        _DMG_BUCKSHOT = 0.35,
-        _DMG_BURN = 0.3,
+        _DMG_BUCKSHOT = 1,
+        _DMG_BURN = 1,
         _DMG_CLUB = 1,
-        _DMG_CRUSH = 1.5,
+        _DMG_CRUSH = 1,
         _DMG_DIRECT = 1,
         _DMG_DISSOLVE = 1,
-        _DMG_DROWN = 0,
-        _DMG_DROWNRECOVER = 0,
-        _DMG_ENERGYBEAM = 1.25,
-        _DMG_FALL = 0,
+        _DMG_DROWN = 1,
+        _DMG_DROWNRECOVER = 1,
+        _DMG_ENERGYBEAM = 1,
+        _DMG_FALL = 1,
         _DMG_GENERIC = 1,
         _DMG_MISSILEDEFENSE = 1,
-        _DMG_NERVEGAS = 0.1,
-        _DMG_NEVERGIB = 0.1,
+        _DMG_NERVEGAS = 1,
+        _DMG_NEVERGIB = 1,
         _DMG_PARALYZE = 1,
         _DMG_PHYSGUN = 1,
         _DMG_PLASMA = 1,
-        _DMG_POISON = 0.05,
+        _DMG_POISON = 1,
         _DMG_PREVENT_PHYSICS_FORCE = 1,
-        _DMG_RADIATION = 0.05,
+        _DMG_RADIATION = 1,
         _DMG_REMOVENORAGDOLL = 1,
         _DMG_SHOCK = 1,
-        _DMG_SLASH = 0.9,
-        _DMG_SLOWBURN = 0.3,
-        _DMG_SNIPER = 1.5,
+        _DMG_SLASH = 1,
+        _DMG_SLOWBURN = 1,
+        _DMG_SNIPER = 1,
         _DMG_SONIC = 1,
         _DMG_VEHICLE = 1
     )
     
     # -- Your health table    
     SETTINGS["HEALTH", table] = table(
-        "MAX" = 2900, # How much should you have in total?
+        "MAX" = 1000, # How much should you have in total?
         "REGEN_DELAY" = 10, # How fast should this be regenerated? (0 -> It shouldn't regen at all) (In miliseconds!)
-        "REGEN_AMOUNT" = 0.5, # How much should this regenerate per delay?
-        "REGEN_TIMEOUT" = 25000 # For how much time should the regeneration be delayed after getting damage?  (In miliseconds!)
+        "REGEN_AMOUNT" = 0.25, # How much should this regenerate per delay?
+        "REGEN_TIMEOUT" = 15000 # For how much time should the regeneration be delayed after getting damage?  (In miliseconds!)
     )
     
     # -- Your shield table
     SETTINGS["SHIELD", table] = table(
-        "MAX" = 3100, # How much should you have in total? (0 -> No shield)
+        "MAX" = 500, # How much should you have in total? (0 -> No shield)
         "REGEN_DELAY" = 10, # How fast should this be regenerated? (0 -> It shouldn't regen at all) (In miliseconds!)
-        "REGEN_AMOUNT" = 10, # How much should this regenerate per delay?
+        "REGEN_AMOUNT" = 0.5, # How much should this regenerate per delay?
         "REGEN_TIMEOUT" = 10000 # For how much time should the regeneration be delayed after getting damage?  (In miliseconds!)
     )
     
@@ -219,17 +219,17 @@ event entityDamage(Victim:entity, Damage:damage) {
             break
         }
     }
+    
+    stoptimer("REGEN_SHIELD")
 
     if( Shield>0 ){
         Shield = clamp( Shield-DamageAmount, 0, SETTINGS["SHIELD", table]["MAX", number])
     } else{
+        stoptimer("REGEN_HEALTH")
         Health = clamp( Health-DamageAmount, 0, SETTINGS["HEALTH", table]["MAX", number])
     }
     
     if( Health<=0 ){ end() }
-    
-    stoptimer("REGEN_SHIELD")
-    stoptimer("REGEN_HEALTH")
     
     if( SETTINGS["SHIELD", table]["REGEN_DELAY", number]!=0 && SETTINGS["SHIELD", table]["REGEN_AMOUNT", number]!=0 ){
         timer("REGEN_SHIELD", SETTINGS["SHIELD", table]["REGEN_TIMEOUT", number])
