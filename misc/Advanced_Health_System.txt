@@ -1,4 +1,4 @@
-@name deltamolfar's Public Advanced Health System v1.2.6
+@name deltamolfar's Public Advanced Health System v1.2.7
 @inputs Hitbox:entity#If you have a single hitbox - you can just wire it to this input.
 @inputs HitboxArray:array#If you have multiple hitbox entities - use adv. entity marker
 @inputs ReloadClk#Reloads the E2 (can be used, for example, to use same hitbox and same chip on "new" contraption
@@ -23,7 +23,7 @@
     4) Use Health/Shield/IsDead outputs as you want
     
     ###################################
-    ## Advanced Health System v1.2.6 ##
+    ## Advanced Health System v1.2.7 ##
     ##      made by deltamolfar      ##
     ##        Glory to Ukraine       ##
     ###################################
@@ -181,14 +181,14 @@ if( first() || dupefinished() ){
 }
 elseif( clk("REGEN_SHIELD") ){
     timer("REGEN_SHIELD", SETTINGS["SHIELD", table]["REGEN_DELAY", number])
-    if( Shield!=MaxShield ){
+    if( Shield<MaxShield ){
         ShieldRegenClk++
         Shield = clamp( Shield+SETTINGS["SHIELD", table]["REGEN_AMOUNT", number], 0, SETTINGS["SHIELD", table]["MAX", number])
     }
 }
 elseif( clk("REGEN_HEALTH") ){
     timer("REGEN_HEALTH", SETTINGS["HEALTH", table]["REGEN_DELAY", number])
-    if( Health!=MaxShield ){
+    if( Health<MaxHealth ){
         HealthRegenClk++
         Health = clamp( Health+SETTINGS["HEALTH", table]["REGEN_AMOUNT", number], 0, SETTINGS["HEALTH", table]["MAX", number])
     }
