@@ -1,4 +1,4 @@
-@name deltamolfar's Public Advanced Health System v1.2.7
+@name deltamolfar's Public Advanced Health System v1.2.8
 @inputs Hitbox:entity#If you have a single hitbox - you can just wire it to this input.
 @inputs HitboxArray:array#If you have multiple hitbox entities - use adv. entity marker
 @inputs ReloadClk#Reloads the E2 (can be used, for example, to use same hitbox and same chip on "new" contraption
@@ -23,7 +23,7 @@
     4) Use Health/Shield/IsDead outputs as you want
     
     ###################################
-    ## Advanced Health System v1.2.7 ##
+    ## Advanced Health System v1.2.8 ##
     ##      made by deltamolfar      ##
     ##        Glory to Ukraine       ##
     ###################################
@@ -63,40 +63,42 @@ function init(){
         Modify this to get different resistances to different types of damage.
         Sometimes, addons uses another enums, so you wouldn't be able to edit ALL the damage types)
         WILL NOT WORK WITHOUT DAMAGE(built in) EXTENSION!
+
+        ( The descriptions are from https://wiki.facepunch.com/gmod/Enums/DMG )
     ]#
     SETTINGS["RESISTANCE", table] = table(
-        _DMG_ACID = 1,
-        _DMG_AIRBOAT = 1,
-        _DMG_ALWAYSGIB = 1,
-        _DMG_BLAST = 1,
-        _DMG_BLAST_SURFACE = 1,
-        _DMG_BUCKSHOT = 1,
-        _DMG_BURN = 1,
-        _DMG_CLUB = 1,
-        _DMG_CRUSH = 1,
-        _DMG_DIRECT = 1,
-        _DMG_DISSOLVE = 1,
-        _DMG_DROWN = 1,
-        _DMG_DROWNRECOVER = 1,
-        _DMG_ENERGYBEAM = 1,
-        _DMG_FALL = 1,
-        _DMG_GENERIC = 1,
-        _DMG_MISSILEDEFENSE = 1,
-        _DMG_NERVEGAS = 1,
-        _DMG_NEVERGIB = 1,
-        _DMG_PARALYZE = 1,
-        _DMG_PHYSGUN = 1,
-        _DMG_PLASMA = 1,
-        _DMG_POISON = 1,
-        _DMG_PREVENT_PHYSICS_FORCE = 1,
-        _DMG_RADIATION = 1,
-        _DMG_REMOVENORAGDOLL = 1,
-        _DMG_SHOCK = 1,
-        _DMG_SLASH = 1,
-        _DMG_SLOWBURN = 1,
-        _DMG_SNIPER = 1,
-        _DMG_SONIC = 1,
-        _DMG_VEHICLE = 1
+        _DMG_ACID = 1, # - Toxic chemical or acid burn damage used by the Antlion Workers
+        _DMG_AIRBOAT = 1, #	- Airboat gun damage
+        _DMG_ALWAYSGIB = 1, # - Always create gibs
+        _DMG_BLAST = 1, # - Explosion damage like grenades, helicopter bombs, combine mines, Will be ignored by most vehicle passengers.
+        _DMG_BLAST_SURFACE = 1, # - This won't hurt the player underwater
+        _DMG_BUCKSHOT = 1, # - The pellets fired from a shotgun
+        _DMG_BURN = 1, # - Damage from fire
+        _DMG_CLUB = 1, # - Blunt attacks such as from the Crowbar, Antlion Guard & Hunter
+        _DMG_CRUSH = 1, # - Caused by physics interaction and ignored by airboat drivers. This is used by the Rollermine and an unused animation attack called 'Fireattack' by the Antlion Guard
+        _DMG_DIRECT = 1, # - Direct damage to the entity that does not go through any damage value modifications
+        _DMG_DISSOLVE = 1, # - Forces the entity to dissolve on death. This is what the combine ball uses when it hits a target.
+        _DMG_DROWN = 1, # - Drown damage
+        _DMG_DROWNRECOVER = 1, # - Damage applied to the player to restore health after drowning
+        _DMG_ENERGYBEAM = 1, # - Laser damage
+        _DMG_FALL = 1, # - Fall damage
+        _DMG_GENERIC = 1, #	- Generic damage (used by weapon_fists)
+        _DMG_MISSILEDEFENSE = 1, # - Damage from npc_missiledefense, npc_combinegunship, or monster_mortar
+        _DMG_NERVEGAS = 1, # - Neurotoxin damage
+        _DMG_NEVERGIB = 1, # - Crossbow damage, never creates gibs.
+        _DMG_PARALYZE = 1, # - 	Same as DMG_POISON
+        _DMG_PHYSGUN = 1, #	- Damage done by the gravity gun.
+        _DMG_PLASMA = 1, # - Plasma damage
+        _DMG_POISON = 1, # - Poison damage used by Antlion Workers & Poison Headcrabs.
+        _DMG_PREVENT_PHYSICS_FORCE = 1, # - Prevent a physics force.
+        _DMG_RADIATION = 1, # - Radiation damage & it will be ignored by most vehicle passengers
+        _DMG_REMOVENORAGDOLL = 1, #	- Don't create a ragdoll on death
+        _DMG_SHOCK = 1, # - Electrical damage, shows smoke at the damage position and its used by Stalkers & Vortigaunts
+        _DMG_SLASH = 1, # - Used by the Stunstick, Manhacks, Antlions, Antlion Guards, Headcrabs, Fast Headcrabs, all Zombies types, Hunter, and potentially other NPCs attacks
+        _DMG_SLOWBURN = 1, # - 
+        _DMG_SNIPER = 1, # - 
+        _DMG_SONIC = 1, # - 
+        _DMG_VEHICLE = 1 # - Hit by a vehicle (This will need to be set for passengers of some vehicle to receive damage)
     )
     
     # -- Your health table    
