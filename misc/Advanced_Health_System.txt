@@ -1,4 +1,4 @@
-@name deltamolfar's Public Advanced Health System v1.3.1
+@name deltamolfar's Public Advanced Health System v1.3.2
 
 @inputs Hitbox:entity#If you have a single hitbox - you can just wire it up to this input
 @inputs HitboxArray:array#If you have multiple hitbox entities - use adv. Entity Marker (If AUTODETECT!=0 -> props that are in this array will be appended to other found entities)
@@ -26,7 +26,7 @@
     5) Use Health/Shield/IsDead outputs as you want
     
     ###################################
-    ## Advanced Health System v1.3.1 ##
+    ## Advanced Health System v1.3.2 ##
     ##      made by deltamolfar      ##
     ##        Glory to Ukraine       ##
     ###################################
@@ -168,7 +168,7 @@ function init(){
         const HealthTable = SETTINGS["HEALTH", table]
         const HealthRegen = floor(HealthTable["REGEN_AMOUNT", number]/HealthTable["REGEN_DELAY", number]*1000, 2)
         
-        const ShieldTable = SETTINGS["HEALTH", table]
+        const ShieldTable = SETTINGS["SHIELD", table]
         const ShieldRegen = floor(ShieldTable["REGEN_AMOUNT", number]/ShieldTable["REGEN_DELAY", number]*1000, 2)
         
         local DeltaModifier = 0
