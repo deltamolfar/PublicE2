@@ -1,5 +1,5 @@
 #[
-    Just a bunch of useful ranger-required functions that I often use.
+    Just a bunch of useful string functions that I often use.
     
     ###################################
     ##           InterpLib           ##
@@ -10,6 +10,7 @@
     This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
     If you change anything in this code, don't expect me to help you.
 ]#
+
 
 #Checks if said entity is behind world, if looked from Origin
 function number entity:isBehindWorld(Origin:vector){
