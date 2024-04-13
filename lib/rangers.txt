@@ -2,7 +2,7 @@
     Just a bunch of useful ranger functions that I often use.
     
     ###################################
-    ##           InterpLib           ##
+    ##           RangerLib           ##
     ##      made by deltamolfar      ##
     ##        Glory to Ukraine       ##
     ###################################
