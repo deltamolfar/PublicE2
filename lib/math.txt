@@ -1,0 +1,31 @@
+#[
+    Just a bunch of useful math functions that I often use.
+    
+    ###################################
+    ##            MathLib            ##
+    ##      made by deltamolfar      ##
+    ##        Glory to Ukraine       ##
+    ###################################
+    
+    This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
+    If you change anything in this code, don't expect me to help you.
+]#
+
+
+function number isInCone(Origin:vector, Target:vector, Normal:vector, ConeSpread:number){
+    Normal = Normal:normalized()
+    
+    const AB = Target-Origin
+    
+    const MagAB = AB:length()
+    const MagNormal = Normal:length()
+    const DotProduct = AB:dot(Normal)
+    
+    const Angle = acos(AB:dot(Normal)/(AB:length()*Normal:length()))
+    
+    if( Angle <= ConeSpread ){
+        return 1
+    } else{
+        return 0
+    }
+}
