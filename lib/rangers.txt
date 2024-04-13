@@ -1,5 +1,5 @@
 #[
-    Just a bunch of useful string functions that I often use.
+    Just a bunch of useful ranger functions that I often use.
     
     ###################################
     ##           InterpLib           ##
