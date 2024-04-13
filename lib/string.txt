@@ -4,7 +4,7 @@
     Just a bunch of useful string functions that I often use.
     
     ###################################
-    ##           InterpLib           ##
+    ##           StringLib           ##
     ##      made by deltamolfar      ##
     ##        Glory to Ukraine       ##
     ###################################
