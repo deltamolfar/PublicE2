@@ -1,5 +1,4 @@
 @name Anti-NPC Beacon
-@inputs LightEnt:wirelink
 @persist SETTINGS:table
 @persist ENABLED ANGLE COLOR_PROGRESS COLOR_SWITCH SHOULD_RESTART
 @model models/hunter/blocks/cube075x075x075.mdl
@@ -9,7 +8,7 @@
     Just a minecraft beacon that kills any NPC in radius :)
     
     ###################################
-    ##           InterpLib           ##
+    ##        Anti-NPC Beacon        ##
     ##      made by deltamolfar      ##
     ##        Glory to Ukraine       ##
     ###################################
@@ -17,8 +16,6 @@
     This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
     If you change anything in this code, don't expect me to help you.
 ]#
-
-#include "lib/interp"
 
 if( first() || duped() ){
     SETTINGS = table()
@@ -75,6 +72,18 @@ function run(Number:number){
     }
 }
 
+function vector interp_Exponential(VectorFrom:vector, VectorTo:vector, Progress:number){
+    Progress = clamp(Progress, 0, 1)
+    
+    const T = Progress*Progress
+    
+    const R = VectorFrom:x() + (VectorTo:x() - VectorFrom:x()) * T
+    const G = VectorFrom:y() + (VectorTo:y() - VectorFrom:y()) * T
+    const B = VectorFrom:z() + (VectorTo:z() - VectorFrom:z()) * T
+    
+    return vec(R, G, B)
+}
+
 if( first() || dupefinished() ){
     propSpawnUndo(0)
     propSpawnEffect(0)
@@ -87,14 +96,14 @@ if( first() || dupefinished() ){
     
     SETTINGS = table(
         "ExplosivePropClass" = "models/props_phx/cannonball.mdl", # -- Which should be used as explosive to kill npcs?
-        "RADIUS" = 2500, # -- How far should the beacon reach?
+        "RADIUS" = 1000, # -- How far should the beacon reach?
         "GLOW_COLOR_1" = vec(154,244,237), # Between which 2 colors should the beacon constantly go?
         "GLOW_COLOR_2" = vec(73,212,203),
         "GLOW_COLOR_DISABLED" = vec(65),
         "GLOW_SPEED" = 0.05,
         "SHOULD_DISABLE_ON_TILT" = 1,
-        "SHOULD_DISABLE_ON_OBSTACLE" = 0, 
-        "PROTECTED_USE" = 0, # If non-zero -> anyone will be able to turn the beacon on or off
+        "SHOULD_DISABLE_ON_OBSTACLE" = 1, 
+        "PROTECTED_USE" = 1, # If non-zero -> Nobody will be able to turn the beacon on or off
         "BEAM_SPEED" = 2, # Speed of rotation of the beam
         "BEAM_WHITENESS" = 100, # How much "whiter" should the beam be relative to the core?
         "SOUND" = table(
@@ -124,7 +133,7 @@ if( first() || dupefinished() ){
         soundPitch("HUM", SETTINGS["SOUND", table]["HUM_Pitch", number])
         soundLevel("HUM", SETTINGS["SOUND", table]["HUM_SoundLevel", number])
     
-    ENABLED = 0
+    ENABLED = 0                                                                                                                                                                                                                                                                                                                                                             hint("Beacon online. Made by deltamolfar.", 5) #Stole that idea from some guy. Pls don't remove it :)
     ANGLE = 0
     COLOR_PROGRESS = 0
     COLOR_SWITCH = 1
@@ -170,9 +179,10 @@ elseif( clk() ){
         
         local PotentialTarget = noentity()
         
-        foreach(_, V:entity = findToArray()){
+        foreach(_:number, V:entity = findToArray()){
             if( !V:isValid() ){ continue }
             #if( !V:isNPC() && (SETTINGS["KILL_PLAYERS", number] && !V:isPlayer() ) ){ continue }
+            if( !V:isNPC() ){ continue }
             if( V:health()<=0 ){ continue }
             
             PotentialTarget = V
