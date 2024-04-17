@@ -10,9 +10,6 @@
     Once all props that you want to capture are in the zone - press SETTINGS_PrintToConsole button.
     OriginEnt input is not mandatory. If you don't specify OriginEnt -> E2 itself would be used as origin point.
     
-    Bruh, this is the chip that I'm proud of fr. I have chips more then 2k lines in length, but for some reason
-    this is my favourite one. Treat it nicely :)
-    
     ###################################
     ##      made by deltamolfar      ##
     ##        Glory to Ukraine       ##
