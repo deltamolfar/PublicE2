@@ -44,8 +44,8 @@ if( first() || duped() ){
     # EDIT THIS! Which image should be loaded (obv it should be encoded .txt file, not an actual image).
     #include "delta_image_viewer/converted_images/cat_x64"
     
-    # How many pixels per execution should be loaded by default?
-    ArrayModeN = 32
+    # How many pixels per execution should be loaded by default? (Don't put >4 here, or there is possible lags)
+    ArrayModeN = 4
     
     # Delay (anything below single tick not gonna make E2 quicker)
     Delay = tickInterval()/1000
@@ -60,6 +60,7 @@ if( first() || duped() ){
     Verbose = 1
     
     # If >0 - will use perf() instead of ArrayModeN (making E2 drawing until <PERF>% cpu time quota is reached (if you dont have any other E2 spawned, you can put it at 95%)).
+    # I don't recommend using it (will cause lag)
     PERF = 0
     
     # If >0 - will put info about image in the name.
