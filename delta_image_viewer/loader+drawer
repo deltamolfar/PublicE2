@@ -14,6 +14,7 @@
     Image rendered to load any image (up to 1024x1024) to the digital screen.
     
     Instructions:
+    0) Save https://github.com/deltamolfar/PublicE2/blob/main/delta_image_viewer/loader%2Bdrawer (this file)
     1) Visit https://deltamolfar.github.io/PublicE2/ and convert image you want to use in gmod.
     2) After pressing 'convert' button, you will download a .txt file.
     3) Place this file in your E2 folder.
@@ -41,7 +42,7 @@
 
 if( first() || duped() ){
     # EDIT THIS! Which image should be loaded (obv it should be encoded .txt file, not an actual image).
-    #include "gmod_image_viewer/converted_images/cat_x1024"
+    #include "delta_image_viewer/converted_images/cat_x64"
     
     # How many pixels per execution should be loaded by default?
     ArrayModeN = 32
