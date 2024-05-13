@@ -1,0 +1,285 @@
+@name loader+drawer v3.1
+@inputs SCREEN:wirelink#DIGITAL screen to be drawn to.
+@outputs TimeLeft:number#Information about how many seconds left (Will be 0 if NonStop is set to non-zero value!)
+
+@persist Aligment:vector2 [ImageInfo ImageData]:string
+@persist OnFinishedMode Verbose CurrentIndex ImageDataStrLength RepeatCounter PixelCounter PixelAmount ResX ResY ArrayModeN Delay
+@persist TopPadding LeftPadding AligmentMode PERF InfoInName
+
+@model models/props_lab/reciever01b.mdl
+
+@strict
+
+#[
+    Image rendered to load any image (up to 1024x1024) to the digital screen.
+    
+    Instructions:
+    1) Visit https://deltamolfar.github.io/PublicE2/ and convert image you want to use in gmod.
+    2) After pressing 'convert' button, you will download a .txt file.
+    3) Place this file in your E2 folder.
+        General path is:
+        "C:\Program Files (x86)\Steam\steamapps\common\GarrysMod\garrysmod\data\expression2\"
+        ( You can place it in whatever expression2 folder you want, as long as you change it in the #include )
+        ( I recommend delta_image_viewer\converted_images for keeping it tidy :) )
+    4) Alter the include to load your image.
+        Example: Image "cat_x128" that is inside delta_image_viewer\converted_images
+        Result: " #include "delta_image_viewer/converted_images/cat_x128" " ( without .txt in the end )
+    5) Configure other options accordingly to your preferences.
+    6) Either just spawn this E2 on the ready digital screen, or somewhere else and link SCREEN input of this E2 to the digital screen wirelink output.
+    7) Wait for image to load into E2, and then to render. (It's okay, if it takes long time)
+    8) Flex to your friends with bad quality memes.
+    
+    ###################################
+    ##      Image loader+drawer      ##
+    ##      made by deltamolfar      ##
+    ##        Glory to Ukraine       ##
+    ###################################
+    
+    This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
+    If you change anything in this code, don't expect me to help you.
+]#
+
+if( first() || duped() ){
+    # EDIT THIS! Which image should be loaded (obv it should be encoded .txt file, not an actual image).
+    #include "gmod_image_viewer/converted_images/cat_x1024"
+    
+    # How many pixels per execution should be loaded by default?
+    ArrayModeN = 32
+    
+    # Delay (anything below single tick not gonna make E2 quicker)
+    Delay = tickInterval()/1000
+    
+    # Aligment mode (first is vertical aligment[ -1->bottom 0->center 1->top ], second it horizontal aligment[ -1->left 0->center 1->right ]).
+    Aligment = vec2(0,0)
+    
+    # If 1 - will delete itself on finish. If 2 - will crash on finish.
+    OnFinishedMode = 1
+    
+    # If >0 - E2 will be verbose (will tell about slient errors, when finished).
+    Verbose = 1
+    
+    # If >0 - will use perf() instead of ArrayModeN (making E2 drawing until <PERF>% cpu time quota is reached (if you dont have any other E2 spawned, you can put it at 95%)).
+    PERF = 0
+    
+    # If >0 - will put info about image in the name.
+    InfoInName = 1
+    
+# -------------------- DON'T TOUCH ANYTHING BELOW THIS LINE, EXCEPT IF YOU KNOW WHAT ARE YOU DOING --------------------
+    
+    CurrentIndex = 1
+    ImageDataStrLength = 0
+    RepeatCounter = 0
+    PixelCounter = 1
+    ResX = 0
+    ResY = 0
+    TopPadding = 0
+    LeftPadding = 0
+    AligmentMode = 0
+}
+
+
+
+function finish(){
+    if( Verbose ){
+        printColor(vec(0,255,255), "[DIV]: ", vec(50,255,50), "Image rendering finished!")
+        hint( "[DIV]: Image rendering finished!", 7 )
+    }
+    
+    switch( OnFinishedMode ){
+        case 1,
+            selfDestruct()
+        break
+        case 2,
+            assert(0, "Image drawing finished!")
+        break
+    }
+}
+
+# ALWAYS TO BE CALLED BEFORE FIRST spitNext()!!! (not included in timer/'spitNext()' for optimization).
+function initImage(){
+    SCREEN[1048574]=0 #Reset Screen and whatever was on it will be cleared.
+    SCREEN[1048569]=3 #Set color mode to 3
+    SCREEN[1048575]=1 #Apply changes
+    
+    RepeatCounter = 0
+    PixelCounter = 0
+    
+    ImageDataStrLength = ImageData:length()
+    
+    local Name = ""
+    CurrentIndex = 1
+    while( CurrentIndex < ImageDataStrLength ){
+        if( ImageData[CurrentIndex]=="|" ){ break }
+        Name += ImageData[CurrentIndex]
+        CurrentIndex++
+    }
+    
+    CurrentIndex++
+    
+    local ResStr = ""
+    while( CurrentIndex < ImageDataStrLength ){
+        if( ImageData[CurrentIndex]=="|" ){ break }
+        ResStr += ImageData[CurrentIndex]
+        CurrentIndex++
+    }
+    
+    CurrentIndex++
+    
+    ResX = ResStr:explode("x")[1, string]:toNumber()
+    ResY = ResStr:explode("x")[2, string]:toNumber()
+    
+    PixelAmount = ResX*ResY
+    local Resolution = 0
+    AligmentMode = 0
+    
+    if( ResX>=ResY ){
+        Resolution = ResX
+        
+        if( ResX!=ResY ){
+            AligmentMode = 1
+            switch( Aligment:x() ){
+                case 0,
+                    TopPadding = floor((ResX-ResY)/2)
+                break
+                case 1,
+                    TopPadding = floor(ResX-ResY)
+                break
+            }
+        }
+    } else{
+        Resolution = ResY
+        AligmentMode = 2
+        
+        switch( Aligment:y() ){
+            case 0,
+                LeftPadding = floor((ResY-ResX)/2)
+            break
+            case 1,
+                LeftPadding = floor(ResY-ResX)
+            break
+        }
+    }
+    
+    # Setting screen resolution
+    SCREEN[1048572]=Resolution
+    SCREEN[1048573]=Resolution
+    
+    ImageInfo = "Image loader v3.1 (optimized monolith) by deltamolfar"+"\nName: "+Name+"\nResolution: "+ResX+"x"+ResY
+}
+
+function drawNext(){
+    const Data = ImageData:sub(CurrentIndex)
+    const Breaker = Data:find("|")
+    const RepeatsInFile = Breaker!=6 ? Data:sub(7, Breaker-1):toNumber() : 0
+    
+    CurrentIndex += 6+Data:sub(7, Breaker-1):length()+1
+    
+    if( RepeatsInFile==0 ){
+        RepeatCounter = 0
+    } else{
+        if( RepeatsInFile>RepeatCounter ){
+            RepeatCounter++
+            CurrentIndex -= 6+Data:sub(7, Breaker-1):length()+1
+        } else{
+            RepeatCounter=0
+            drawNext()
+            return
+        }
+    }
+    
+    PixelCounter++
+    
+    if (AligmentMode == 0){# ------------------------------ Image is equally sized.
+        X = (PixelCounter - 1) % ResX
+        Y = floor((PixelCounter - 1) / ResX)
+    } else{
+        if (AligmentMode == 1){# -------------------------- Image is horizontal (ex. 128x64).
+            X = (PixelCounter - 1) % ResX + LeftPadding
+            Y = floor((PixelCounter - 1) / ResX) + TopPadding
+        }
+        else{# -------------------------------------------- Image is vertical (ex. 64x128).
+            X = (PixelCounter - 1) % ResX + LeftPadding
+            Y = floor((PixelCounter - 1) / ResX) + TopPadding
+        }
+    }
+    
+    SCREEN[X*ResY+Y] = rgb2digi(Data:sub(1, 2):toNumber(16), Data:sub(3, 4):toNumber(16), Data:sub(5, 6):toNumber(16),3)
+}
+
+
+
+if( first() || dupefinished() ){
+    if( !SCREEN:entity():isValid() ){
+        const PotentialScreen = entity():isWeldedTo()
+        
+        if( PotentialScreen:isValid() ){
+            if( PotentialScreen:type() == "gmod_wire_digitalscreen" ){
+                try{
+                    PotentialScreen:createWirelink()
+                    entity():createWire(PotentialScreen, "SCREEN", "wirelink")
+                } catch(ERROR:string){
+                    if( Verbose ){ printColor(vec(0,255,255), "[DIV]: ", vec(255,0,0), "Failed to auto-wire to welded screen. REASON: "+ERROR+" Waiting for a screen to be connected!") }
+                    exit()
+                }
+                
+                if( Verbose ){ printColor(vec(0,255,255), "[DIV]: ", vec(50,255,50), "Auto-linked to welded screen!") }
+            }   
+        } else{
+            if( Verbose ){ printColor(vec(0,255,255), "[DIV]: ", vec(255,0,0), "Screen not found! Waiting for a screen to be connected!") }
+            exit()
+        }
+    }
+    
+    initImage()
+    timer("LOOP.SpitOut", 1)
+    timer("LOOP.UpdateTimeLeft", 250)
+}
+elseif( clk("LOOP.SpitOut") ){
+    timer("LOOP.SpitOut", Delay)
+
+    if( PERF==0 ){
+        for(_=1, ArrayModeN){
+            drawNext()
+            
+            if( PixelCounter>PixelAmount ){
+                finish()
+                stoptimer("LOOP.SpitOut")
+                stoptimer("LOOP.UpdateTimeLeft")
+                break
+            }
+        }
+    } else{
+        while( perf(PERF) ){
+            drawNext()
+            
+            if( PixelCounter>PixelAmount ){
+                finish()
+                stoptimer("LOOP.SpitOut")
+                stoptimer("LOOP.UpdateTimeLeft")
+                break
+            }
+        }
+    }
+}
+elseif( clk("LOOP.UpdateTimeLeft") ){
+    timer("LOOP.UpdateTimeLeft", 250)
+    TimeLeft = floor(max(((PixelAmount-PixelCounter)*Delay/ArrayModeN)*1000, 0), 2)
+    
+    if( InfoInName>0 ){
+        if( canSetName() ){
+            setName(ImageInfo+"\nPercent done: "+floor(PixelCounter/PixelAmount,4)*100+"%\nTime left: "+ (PERF>0 ? "NaN" : TimeLeft+"s"))
+        }
+    }
+}
+
+
+
+event input(InputName:string) {
+    if( InputName=="SCREEN" && SCREEN:entity():isValid() ){
+        if( Verbose ){ printColor(vec(0,255,255), "[DIV]: ", vec(50,255,50), "Screen linked. Starting the render...") }
+        
+        initImage()
+        timer("LOOP.SpitOut", 1)
+        timer("LOOP.UpdateTimeLeft", 250)
+    }
+}
