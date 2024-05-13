@@ -15,7 +15,7 @@
     (Autowin is optional input that stops game once you assemble 2048 block)
     
     ###################################
-    ##           InterpLib           ##
+    ##              2048             ##
     ##      made by deltamolfar      ##
     ##        Glory to Ukraine       ##
     ###################################
