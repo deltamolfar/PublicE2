@@ -18,6 +18,11 @@
 7) Wait for image to load into E2, and then to render. (It's okay, if it takes long time)
 8) Flex to your friends with bad quality memes, or cats.
 
+>[!WARNING]
+>Using ArrayModeN > 4, or using high perf (>20) will cause server-side lag!
+>
+>**Be careful!**
+
 ### PS
 - The loading time heavily depends on server limits, and your configuration. But you should not have any problems with images up to 256x256.
 
