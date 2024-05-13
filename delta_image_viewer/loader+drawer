@@ -215,15 +215,19 @@ if( first() || dupefinished() ){
         
         if( PotentialScreen:isValid() ){
             if( PotentialScreen:type() == "gmod_wire_digitalscreen" ){
-                try{
-                    PotentialScreen:createWirelink()
-                    entity():createWire(PotentialScreen, "SCREEN", "wirelink")
-                } catch(ERROR:string){
-                    if( Verbose ){ printColor(vec(0,255,255), "[DIV]: ", vec(255,0,0), "Failed to auto-wire to welded screen. REASON: "+ERROR+" Waiting for a screen to be connected!") }
-                    exit()
-                }
-                
-                if( Verbose ){ printColor(vec(0,255,255), "[DIV]: ", vec(50,255,50), "Auto-linked to welded screen!") }
+                #ifdef nowirelink()
+                    try{
+                        PotentialScreen:createWirelink()
+                        entity():createWire(PotentialScreen, "SCREEN", "wirelink")
+                    } catch(ERROR:string){
+                        if( Verbose ){ printColor(vec(0,255,255), "[DIV]: ", vec(255,0,0), "Failed to auto-wire to welded screen. REASON: "+ERROR+". Waiting for a screen to be connected!") }
+                        exit()
+                    }
+                    
+                    if( Verbose ){ printColor(vec(0,255,255), "[DIV]: ", vec(50,255,50), "Auto-linked to welded screen!") }
+                #else
+                    if( Verbose ){ printColor(vec(0,255,255), "[DIV]: ", vec(255,0,0), "Failed to auto-wire to welded screen. REASON: 'wiring' extension is disabled. Waiting for a screen to be connected!")
+                #endif
             }   
         } else{
             if( Verbose ){ printColor(vec(0,255,255), "[DIV]: ", vec(255,0,0), "Screen not found! Waiting for a screen to be connected!") }
