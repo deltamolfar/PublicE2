@@ -2,6 +2,7 @@
 ![DIV_thumbnail](https://github.com/deltamolfar/PublicE2/assets/72973198/5090c385-81db-4599-aa55-507fc5f2b79f)
 
 ## To use:
+0) Save ![the E2](https://github.com/deltamolfar/PublicE2/blob/main/delta_image_viewer/loader%2Bdrawer)
 1) Visit https://deltamolfar.github.io/PublicE2/ and convert image you want to use in gmod.
 2) After pressing 'convert' button, you will download a .txt file.
 3) Place this file in your E2 folder.
