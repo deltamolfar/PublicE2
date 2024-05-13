@@ -24,8 +24,6 @@
     If you change anything in this code, don't expect me to help you.
 ]#
 
-#made by deltamolfar, have fun :)
-
 if( first() || duped() ){
     SETTINGS_MoveCooldown = 400
     SETTINGS_SOUND_MoveAccepted = "buttons/lightswitch2.wav"
