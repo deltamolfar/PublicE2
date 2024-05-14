@@ -13,6 +13,7 @@
     It will wire itself to friendlist entity automatically
     
     ###################################
+    ##          Blast door           ##
     ##      made by deltamolfar      ##
     ##        Glory to Ukraine       ##
     ###################################
