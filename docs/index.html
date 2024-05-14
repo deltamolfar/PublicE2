@@ -204,7 +204,7 @@
                         textData += `|${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}${count > 1 ? count : ''}`;
                     });
 
-                    textData += '|[[[[[[[[[[[[['; // EOF
+                    textData += '|[[[[[[[[[[[[["'; // EOF
 
                     const blob = new Blob([textData], { type: 'text/plain' });
                     const url = URL.createObjectURL(blob);
