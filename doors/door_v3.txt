@@ -1,0 +1,205 @@
+@name Door v3 by deltamolfar
+@inputs ForceOpenClk#If changed and non-zero - will open regardless to the original settings
+@inputs ForceCloseClk#If changed and non-zero - will close regardless to the original settings
+@inputs ForceToggleClk#If changed and non-zero - will open/close regardless to the original settings
+
+@outputs IsOpen#Is the door open right now?
+
+@persist [SOUND_MOVE SOUND_OPENED SOUND_CLOSED SOUND_LOCKED]:string [DoorEnt DoorHolo HoloOrig]:entity [OpenAngle CloseAngle]:angle
+@persist RefreshDelay DoorSkin AutoCloseDelay Speed MaxAngle OpenForward LERP_PROGRESS ProtectedUse
+
+@model models/hunter/blocks/cube1x2x05.mdl
+@strict
+
+#[
+    Door that you were looking for.
+    To set it up:
+    1) Configure it.
+    2) Spawn it.
+    3) Align it as you want using physgun (ignore it possibly glitching).
+    4) Update it once placed (use Shift+E with physgun to make it perfectly vertical).
+    5) Use it.
+
+    ###################################
+    ##            Door v3            ##
+    ##      made by deltamolfar      ##
+    ##        Glory to Ukraine       ##
+    ###################################
+
+    This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
+    If you change anything in this code, don't expect me to help you.
+]#
+
+if( first() || duped() ){
+# +++ SETTINGS +++
+    AutoCloseDelay = 5000 #After how many miliseconds should the door be closed automatically? (0 to disable)
+    MaxAngle = 120 #How "far" should the door open? Must be between 1 and 179! (The higher the number - the faster the door will open, so remember to adjust other settings!)
+    OpenForward = -1 #Should the door be opened forward(1) or backward(-1)? Should be only -1 or 1!
+    Speed = 0.075 #How fast should the door move in each frame?  
+    RefreshDelay = 50 #How fast should the door position be updated? (The lower the number - the faster the door will open/close with the same Speed, but it will increate the performance load)
+    DoorSkin = 0
+    ProtectedUse = 1 #Should other player be able(0) or unable(1) to open your door?
+# --- SETTINGS ---
+    
+    SOUND_MOVE = ""
+    SOUND_OPENED = ""
+    SOUND_CLOSED = ""
+    SOUND_LOCKED = ""
+    
+    IsOpen = 0
+    LERP_PROGRESS = 1
+    
+    DoorEnt = entity()
+}
+
+
+
+function door_open(){
+    if( IsOpen ){ return }
+    
+    LERP_PROGRESS = remap(LERP_PROGRESS,0,1,1,0)
+    IsOpen = 1
+    
+    DoorEnt:emitSound(SOUND_MOVE)
+    if( AutoCloseDelay!=0 ){ timer("AUTO_CLOSE", AutoCloseDelay) }
+}
+
+function door_close(){
+    if( !IsOpen ){ return }
+    stoptimer("AUTO_CLOSE")
+    
+    LERP_PROGRESS = remap(LERP_PROGRESS,0,1,1,0)
+    IsOpen = 0
+    
+    DoorEnt:emitSound(SOUND_MOVE)
+}
+
+function door_toggle(){
+    if( !IsOpen ){ door_open() }
+    else{ door_close() }
+}
+
+function angle lerpAngle(Angle1:angle, Angle2:angle, Progress:number){
+    let NormalizeAngle = function(A:number){
+        return (A + 180) % 360 - 180
+    }
+
+    let LerpAngleComponent = function(P:number, A1:number, A2:number){
+        local Delta = NormalizeAngle(A2 - A1)[number]
+        return A1 + P * Delta
+    }
+    
+    const P = NormalizeAngle(LerpAngleComponent(Progress, NormalizeAngle(Angle1:pitch())[number], NormalizeAngle(Angle2:pitch())[number])[number])[number]
+    const Y = NormalizeAngle(LerpAngleComponent(Progress, NormalizeAngle(Angle1:yaw())[number], NormalizeAngle(Angle2:yaw())[number])[number])[number]
+    const R = NormalizeAngle(LerpAngleComponent(Progress, NormalizeAngle(Angle1:roll())[number], NormalizeAngle(Angle2:roll())[number])[number])[number]
+
+    return ang(P,Y,R)
+}
+
+
+
+if( first() ){
+    print("Ignore the E2 being dumbass when you rotate the bounding box, just update it when you've placed it where you want")
+}
+if( first() || dupefinished() ){
+    propSpawnUndo(0)
+    
+    entity():setAng(entity():angles():setRoll(-90))
+    
+    assert(MaxAngle>0 && MaxAngle<180, "MaxAngle should be between 1 and 179!")
+    assert(OpenForward==-1 || OpenForward==1, "OpenForward var can't contain any value but 1 or -1!")
+    assert(Speed!=0, "")
+    
+    const E = entity()
+    
+    E:setAlpha(10)
+    E:noCollideAll(1)
+    
+    DoorEnt = propSpawn("models/hunter/blocks/cube1x2x025.mdl", E:pos(), E:angles(), 1)
+    DoorEnt:setAlpha(0)
+    DoorEnt:propDraw(0)
+    
+    HoloOrig = holoCreate(3, E:toWorld(vec(23,0,0)), vec(1), E:toWorld(ang(-90,0,90)), vec4(0))
+    DoorHolo = holoCreate(1, E:toWorld(vec(23,0,0)), vec(1), E:toWorld(ang(-90,0,90)), vec4(255), "models/props_c17/door01_left.mdl")
+    holoCreate(2, E:toWorld(vec(23,0,0)), vec(0.9, 1, 1), E:toWorld(ang(-90,0,90)), vec4(255), "models/props_c17/door01_left.mdl")
+        holoClipEnabled(2, 1, 1)
+        holoClipEnabled(2, 2, 1)
+        holoClipEnabled(2, 3, 1)
+        holoClip(2, 1, vec(0,0,-8), vec(0,0,-1), 0)
+        holoClip(2, 2, vec(0,0,-14), vec(0,0,1), 0)
+        holoClip(2, 3, vec(0,44,0), vec(0,-1,0), 0)
+    holoCreate(4, E:toWorld(vec(-19.75,10.5,0)), vec(0.25), E:toWorld(ang(0)), vec4(255))
+
+    holoSkin(1, DoorSkin)
+    holoBodygroup(2, 1, 1)
+    
+    holoParent(2, 4)
+    holoParent(4, 1)
+    DoorEnt:parentTo(DoorHolo)
+    holoParent(1, E)
+    
+    CloseAngle = HoloOrig:toWorld(ang(0,0,0))
+    OpenAngle = HoloOrig:toWorld(ang(0,MaxAngle*OpenForward,0))
+    
+    interval(RefreshDelay)
+} elseif( clk() ){
+    interval(RefreshDelay)
+    
+    if( LERP_PROGRESS>=1 ){ exit() }
+    LERP_PROGRESS += Speed
+
+    if( IsOpen ){
+        if( LERP_PROGRESS>=1 ){
+            holoAng(1, OpenAngle)
+            DoorEnt:emitSound(SOUND_OPENED)
+            exit()
+        }
+        
+        holoAng(1, lerpAngle(CloseAngle, OpenAngle, LERP_PROGRESS))
+    } else{
+        if( LERP_PROGRESS>=1 ){
+            holoAng(1, CloseAngle)
+            DoorEnt:emitSound(SOUND_CLOSED)
+            exit()
+        }
+        
+        holoAng(1, lerpAngle(OpenAngle, CloseAngle, LERP_PROGRESS))
+    }
+} elseif( clk("AUTO_CLOSE") ){
+    if( IsOpen && LERP_PROGRESS>=1 ){ door_close() }
+} elseif( clk("HANDLE_OPEN") ){
+    
+}
+
+
+
+event keyPressed(Player:entity, Key:string, Down:number, KeyBind:string) {
+    if( Player!=owner() || !Down ){ exit() }
+
+    if( KeyBind=="use" && (Player:aimEntity()==DoorEnt || Player:aimEntity()==entity()) && Player:pos():distance(DoorEnt:pos())<=200 ){
+        if( ProtectedUse && Player!=owner() ){
+            if( LERP_PROGRESS>=1 ){ 
+                timer("HANDLE_CLOSED", 1)
+                DoorEnt:emitSound(SOUND_LOCKED)
+            }
+            
+            exit()
+        }
+        
+        door_toggle()
+    }
+}
+
+event input(InputName:string) {
+    switch( InputName ){
+        case "ForceOpenClk",
+            if( ForceOpenClk!=0 ){ door_open() }
+        break
+        case "ForceCloseClk",
+            if( ForceCloseClk!=0 ){ door_close() }
+        break
+        case "ForceToggleClk",
+            if( ForceToggleClk!=0 ){ door_toggle() }
+        break
+    }
+}
