@@ -79,11 +79,13 @@ Have question? Try to get answer in [FAQ](https://github.com/deltamolfar/PublicE
 ## [Test&Examples](https://github.com/deltamolfar/PublicE2/tree/main/Test%26Examples)
 - Description: Some useful concepts that I often use as references.
 - Contents:
-  - [BesierInterpolation](https://github.com/deltamolfar/PublicE2/blob/main/Test%26Examples/BesierInterpolation.txt): Implements and shows how to use bezier.
+  - [BesierInterpolation](https://github.com/deltamolfar/PublicE2/blob/main/Test%26Examples/BesierInterpolation.txt): Implements and shows how to use bezier interpolation.
   - [Sphere even spread](https://github.com/deltamolfar/PublicE2/blob/main/Test%26Examples/EvenSphereSpread.txt): Shows how to evenly spread N points in sphere excluding/including inside of it.
   - [Rotation around axis](https://github.com/deltamolfar/PublicE2/blob/main/Test%26Examples/RotationAroundAxis.txt): Shows how to rotate an entity around other entity/pos.
 
 
 
 # FAQ:
-- How to see amount of health from [Advanced Health System](https://github.com/deltamolfar/PublicE2/blob/main/misc/Advanced_Health_System.txt)? => Use any text screen/modular hud or just click C->RMB->Debug on that E2. E2 itself doesn't provide any graphical/chat announcements/info to make it portable inside any other contraptions, and as modular as possible.
+>How to see amount of health from [Advanced Health System](https://github.com/deltamolfar/PublicE2/blob/main/misc/Advanced_Health_System.txt)?
+
+Use any text screen/modular hud or just click C->RMB->Debug on that E2. E2 itself doesn't provide any graphical/chat announcements/info to make it portable inside any other contraptions, and as modular as possible.
