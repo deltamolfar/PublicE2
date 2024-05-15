@@ -3,7 +3,7 @@ My public Garry's Mod wiremod Expression 2 chip repo
 
 If you want - you are more then welcome to commit/create issue(in which you can give also new ideas).
 
-Have question? Try to get answer in [FAQ](https://github.com/deltamolfar/PublicE2/edit/main/README.md#faq) or feel free to [open an issue](https://github.com/deltamolfar/PublicE2/issues/new).
+Have question? Try to get answer in [FAQ](https://github.com/deltamolfar/PublicE2?tab=readme-ov-file#faq) or feel free to [open an issue](https://github.com/deltamolfar/PublicE2/issues/new).
 
 # Content list
 
@@ -15,7 +15,7 @@ Have question? Try to get answer in [FAQ](https://github.com/deltamolfar/PublicE
   - [readme](https://github.com/deltamolfar/PublicE2/blob/main/delta_image_viewer/readme.md): Gihub version of instruction how to use it.
 
 > [!NOTE]
-> You should read readme's warning before using it.
+> You should read [readme's](https://github.com/deltamolfar/PublicE2/blob/main/delta_image_viewer/readme.md) warning before using it.
 
 
 
