@@ -29,6 +29,8 @@ Have question? Try to get answer in [FAQ](https://github.com/deltamolfar/PublicE
   - [Predator cloak](https://github.com/deltamolfar/PublicE2/blob/main/misc/predator_cloak.txt): Simple, but a bit balanced cloak (makes you invisible).
   - [carspamlol](https://github.com/deltamolfar/PublicE2/blob/main/misc/carspamlol.txt): You heard me. Just shoots cars at your aim point. Nothing balanced about it :D.
   - [trippy shit](https://github.com/deltamolfar/PublicE2/blob/main/misc/Trippy_shit.txt): Just spawn it, and let it load (you shouldn't have any spawned holograms to make it as beautiful as possible).
+  - [Door v3](https://github.com/deltamolfar/PublicE2/blob/main/doors/door_v3.txt): Door of doors. Basically a door, that is pretty similar to the HL2/GMOD one.
+  - [Blast door](https://github.com/deltamolfar/PublicE2/blob/main/doors/BlastDoor.txt): Door that opens to top. Pretty simple.
 
 
 
@@ -47,29 +49,20 @@ Have question? Try to get answer in [FAQ](https://github.com/deltamolfar/PublicE
 
 
 
-
-## [Doors](https://github.com/deltamolfar/PublicE2/tree/main/doors)
-- Description: Doors lol.
-- Contents:
-  - [Door v3](https://github.com/deltamolfar/PublicE2/blob/main/doors/door_v3.txt): Door of doors. Basically a door, that is pretty similar to the HL2/GMOD one.
-  - [Blast door](https://github.com/deltamolfar/PublicE2/blob/main/doors/BlastDoor.txt): Door that opens to top. Pretty simple.
-
-
-
-## [Libraries](https://github.com/deltamolfar/PublicE2/tree/main/lib)
+## [Libraries](https://github.com/deltamolfar/PublicE2/tree/main/libraries)
 - Description: Libraries that other creators can find useful, and the one that my E2s use.
 - Contents:
-  - [Damage](https://github.com/deltamolfar/PublicE2/blob/main/lib/damage.txt): Library that let's you deal as much damage to any entity/player as you need (damage extension is required).
-  - [Dialog](https://github.com/deltamolfar/PublicE2/blob/main/lib/dialog.txt): Lets you make series of sounds, enabling making dialogues that are made out of npc words (iirc - clock uses it to tell you the time).
-  - [Interpolations](https://github.com/deltamolfar/PublicE2/blob/main/lib/interp.txt): A bunch of interpolation functions. (Partially deprecated due to wiremod implemented vector lerp, but still didn't make it for xv4, xv2, or other interpolations :D)
-  - [Math](https://github.com/deltamolfar/PublicE2/blob/main/lib/math.txt): Some math functions.
-  - [Ranger](https://github.com/deltamolfar/PublicE2/blob/main/lib/rangers.txt): Some simple useful ranger functions.
-  - [String](https://github.com/deltamolfar/PublicE2/blob/main/lib/string.txt): Useful string functions. One of features is printout, which let you populate very big array, to then slowly spit out to console it's contents.
-  - [Supertimers](https://github.com/deltamolfar/PublicE2/blob/main/lib/supertimers.txt): Powerful timers, that are very similar to those used by starfall/GLua. They also can use callbacks, can be paused/resumed. Can return how much time left until new executions. Can execute N times, etc. You name it. Check it out!
+  - [Damage](https://github.com/deltamolfar/PublicE2/blob/main/libraries/damage.txt): Library that let's you deal as much damage to any entity/player as you need (damage extension is required).
+  - [Dialog](https://github.com/deltamolfar/PublicE2/blob/main/libraries/dialog.txt): Lets you make series of sounds, enabling making dialogues that are made out of npc words (iirc - clock uses it to tell you the time).
+  - [Interpolations](https://github.com/deltamolfar/PublicE2/blob/main/libraries/interp.txt): A bunch of interpolation functions. (Partially deprecated due to wiremod implemented vector lerp, but still didn't make it for xv4, xv2, or other interpolations :D)
+  - [Math](https://github.com/deltamolfar/PublicE2/blob/main/libraries/math.txt): Some math functions.
+  - [Ranger](https://github.com/deltamolfar/PublicE2/blob/main/libraries/rangers.txt): Some simple useful ranger functions.
+  - [String](https://github.com/deltamolfar/PublicE2/blob/main/libraries/string.txt): Useful string functions. One of features is printout, which let you populate very big array, to then slowly spit out to console it's contents.
+  - [Supertimers](https://github.com/deltamolfar/PublicE2/blob/main/libraries/supertimers.txt): Powerful timers, that are very similar to those used by starfall/GLua. They also can use callbacks, can be paused/resumed. Can return how much time left until new executions. Can execute N times, etc. You name it. Check it out!
 
 
 
-## [Admin](https://github.com/deltamolfar/PublicE2/tree/main/admin)
+## [~~Admin~~Abuse](https://github.com/deltamolfar/PublicE2/tree/main/admin)
 - Description: Admin priv required/heavy abuse E2s.
 - Contents:
   - [Screamer](https://github.com/deltamolfar/PublicE2/blob/main/admin/Screamer.txt): Just scares a target.
