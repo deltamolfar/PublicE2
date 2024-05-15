@@ -65,6 +65,7 @@ Have question? Try to get answer in [FAQ](https://github.com/deltamolfar/PublicE
   - [Math](https://github.com/deltamolfar/PublicE2/blob/main/lib/math.txt): Some math functions.
   - [Ranger](https://github.com/deltamolfar/PublicE2/blob/main/lib/rangers.txt): Some simple useful ranger functions.
   - [String](https://github.com/deltamolfar/PublicE2/blob/main/lib/string.txt): Useful string functions. One of features is printout, which let you populate very big array, to then slowly spit out to console it's contents.
+  - [Supertimers](https://github.com/deltamolfar/PublicE2/blob/main/lib/supertimers.txt): Powerful timers, that are very similar to those used by starfall/GLua. They also can use callbacks, can be paused/resumed. Can return how much time left until new executions. Can execute N times, etc. You name it. Check it out!
 
 
 
