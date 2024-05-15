@@ -6,9 +6,10 @@
     More suitable for eyes documentation: https://github.com/deltamolfar/PublicE2/blob/main/lib/supertimers.txt
     
     Basic usage instruction:
-    0) CRUCIAL: Place supertimer_process() in global scope (outside of any if block/function/event)
-        (It can be placed as the if( supertimer_process() ) tho, so it will return 1 if the current execution was
-        due to supertimer. You can use it for your logic as well.)
+    0) CRUCIAL: Either put #include in global scope (outside of any if block/function/event), or, if you place it inside
+        if(first()) (or anywhere else) - Place supertimer_process() in global scope (outside of any if block/function/event)
+            (It can be placed as the if( supertimer_process() ) tho, so it will return 1 if the current execution was
+            due to supertimer. You can use it for your logic as well.)
     1) Create a timer using 'supertimer_create(SNNF)'
         ( supertimer_create("HelloWorldTimer", 2000, 5, function(){print("Hello world")}) - Will print out 'hello world' 5 times every 2 seconds. )
     2) That's it :D
@@ -711,28 +712,13 @@ function number supertimer_process(){
     return 1
 }
 
-#[
-# Main element of this lib, yet simple. (For some reason it doesn't work while #included, so use supertimer_process() instead).
-if( supertimer_exists( clkName():sub(13) ) ){
-    const TimerTable = LIB_SUPERTIMER_INTERNAL_SuperTimers[clkName(), table]
-    print(TimerTable)
-    
-    TimerTable["Func", function]()
-    TimerTable["RepsLeft", number] = TimerTable["RepsLeft", number]-1
-    
-    if( TimerTable["RepsLeft", number]<=0 ){
-        supertimer_remove(clkName():sub(13))
-    } else{
-        TimerTable["LastExec", number] = curtime()
-        
-        timer(clkName(), TimerTable["Delay", number])
-    }
-}]#
+
+# Main element of this lib, yet simple. (IT WILL NOT WORK IF #include is inside any if first() block/function/etc,
+#   so place supertimer_process() on global scope yourself!
+supertimer_process()
 
 
 #[ #-- Uncomment that, if you want to see how it works.
-supertimer_process()
-
 if( first() ){
     supertimer("FOO", 1500, 1, function(){ print("Hello world") })# We set a foo timer at 1500 miliseconds delay.
     
