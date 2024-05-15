@@ -1,4 +1,4 @@
-@name 2048 by delta
+@name 2048 by deltamolfar
 @inputs [EGP KeyBoard]:wirelink User:entity AutoWin# Will stop the game at win screen once 2048 reached
 @inputs MuteSound# Mutes sound effects
 @inputs ChatAnnouncement# Announce win/lose to chat? (needs wire_expression2_concmd 1)
@@ -15,14 +15,16 @@
     (Autowin is optional input that stops game once you assemble 2048 block)
     
     ###################################
-    ##              2048             ##
+    ##           InterpLib           ##
     ##      made by deltamolfar      ##
     ##        Glory to Ukraine       ##
     ###################################
     
     This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
-    If you change anything in this code, don't expect me to help you.
+    If you want to change something, and help others, feel free to create an issue/PR.
 ]#
+
+#made by deltamolfar, have fun :)
 
 if( first() || duped() ){
     SETTINGS_MoveCooldown = 400
@@ -31,8 +33,7 @@ if( first() || duped() ){
     SETTINGS_SOUND_Lose = "ui/freeze_cam.wav"
     SETTINGS_SOUND_Win = "ui/achievement_earned.wav"
     SETTINGS_SOUND_GameStarted = "buttons/bell1.wav"
-}
-if( first() || dupefinished() ){
+    
     Score = 0
     BestScore = 0
     GameIsRunning = 0
@@ -81,562 +82,548 @@ if( first() || dupefinished() ){
     Parameters["Colors-text", table]["32768", vector4] = vec4(249,246,241, 255)
     Parameters["Colors-text", table]["65536", vector4] = vec4(249,246,241, 255)
     Parameters["Colors-text", table]["131072", vector4] = vec4(249,246,241, 255)
+}
 
-    function printOwnerAI(Color:vector, Message:string){
-        printColor(vec(120,255,200), "[2048]: ", Color, Message)
-    }
-    
-    function number isTimerRunning(Name:string){
-        foreach(_:number, V:string = getTimers()){
-            if( Name==V ){ return 1 }
-        }
-        
-        return 0
-    }
-    
-    function number addRandomTile(){
-        local FreeFieldsIndexes = array()
-        
-        foreach(I:number, V:number = Field){
-            if( V==0 ){ FreeFieldsIndexes:pushNumber(I) }
-        }
-        
-        if( FreeFieldsIndexes:count()==0 ){ return 0 }
-        
-        local Number = randint(1, 10)
-        if( Number<=9 ){ Number = 2 }
-        else{ Number = 4 }
-        
-        local RandomIndex = randint(1, FreeFieldsIndexes:count())
-        Field[FreeFieldsIndexes[RandomIndex, number], number] = Number
-        return 1
-    }
-    
-    function initScreen(){
-        if( !GameIsRunning ){ return }
-        EGP:egpClear()
-        
-        EGP:egpBox(300, vec2(256,256), vec2(512,512))
-            EGP:egpColor(300, vec(250,248,238))
-            
-        EGP:egpRoundedBox(299, vec2(256, 256), vec2(352, 352))
-            EGP:egpColor(299, vec(189,173,158))
-            EGP:egpRadius(299, 4)
-            
-        EGP:egpBoxOutline(298, vec2(256,256), vec2(512,512))
-            EGP:egpSize(298, 6)
-            EGP:egpColor(298, vec(70,70,70))
-            
-        local Size299 = EGP:egpSize(299)
-        local Pos299 = EGP:egpPos(299)
-        local Gap = 7
-        local SizeW = Size299:x()/4-Gap*2
-        local SizeH = Size299:y()/4-Gap*2
-        
-        for(I=0, 3){
-            local CurX = Pos299:x()-Size299:x()*0.5+SizeW*0.5
-            local CurY = Pos299:y()-Size299:y()*0.5+(Size299:y()/4*I)+Gap+SizeH*0.5
-            
-            for(J=1+4*I, 4+4*I){
-                CurX+=Gap
-                local SquareValue = toString( Field[J, number] )
-                
-                EGP:egpRoundedBox(J, vec2(CurX, CurY), vec2(SizeW, SizeH))
-                    EGP:egpColor(J, Parameters["Colors", table][SquareValue, vector])
-                    EGP:egpRadius(J, 4)
-                    
-                EGP:egpText(J+16, SquareValue, vec2(0,0))
-                    EGP:egpParent(J+16, J)
-                    EGP:egpAlign(J+16, 1, 1)
-                    EGP:egpFont(J+16, "consolas", Size299:x()*0.1)
-                    EGP:egpColor(J+16, Parameters["Colors-text", table][SquareValue, vector4])
-                    
-                CurX+=SizeW+Gap
-            }
-        }
-        
-        local Size = 70
-        local Temp = Pos299:y()
-        
-        EGP:egpText(281, "Locked by:", vec2(0,0))
-            EGP:egpAlign(281, 0, 2)
-        EGP:egpText(280, "N/A", vec2(0,0))
-        EGP_Indexes["LockButton_Name", number] = 280
-        
-        #left
-        EGP:egpBox(200, vec2(40, Temp), vec2(Size))
-            EGP:egpAngle(200, -90)
-            EGP_Indexes["Left", number] = 200
-        #right
-        EGP:egpBox(201, vec2(472, Temp), vec2(Size))
-            EGP:egpAngle(201, 90)
-            EGP_Indexes["Right", number] = 201
-            
-        Temp = Pos299:x()
-        #up
-        EGP:egpBox(202, vec2(Temp, 40), vec2(Size))
-            EGP:egpAngle(202, 180)
-            EGP_Indexes["Up", number] = 202
-        #down
-        EGP:egpBox(203, vec2(Temp, 472), vec2(Size))
-            EGP:egpAngle(203, 0)
-            EGP_Indexes["Down", number] = 203
-        
-        for(I=200, 203){
-            EGP:egpMaterial(I, "gui/point.png")
-            EGP:egpColor(I, vec(0,215,40))
-        }
-        
-        #Scores
-            #Score
-        EGP:egpRoundedBox(290, vec2(128, 42), vec2(128, 64))
-            EGP:egpColor(290, vec(183,173,161))
-            EGP:egpRadius(290, 4)
-        EGP:egpText(289, "SCORE", vec2(0,0))
-            EGP:egpAlign(289, 1, 2)
-            EGP:egpParent(289, 290)
-            EGP:egpFont(289, "consolas", 27)
-        EGP:egpText(288, "0", vec2(0,0))
-            EGP:egpAlign(288, 1)
-            EGP:egpParent(288, 290)
-            EGP:egpFont(288, "consolas", 27)
-            EGP_Indexes["Score", number] = 288
 
-            #Best Score
-        EGP:egpRoundedBox(287, vec2(384, 42), vec2(128, 64))
-            EGP:egpColor(287, vec(183,173,161))
-            EGP:egpRadius(287, 4)
-        EGP:egpText(286, "BEST", vec2(0,0))
-            EGP:egpAlign(286, 1, 2)
-            EGP:egpParent(286, 287)
-            EGP:egpFont(286, "consolas", 27)
-        EGP:egpText(285, toString( BestScore ), vec2(0,0))
-            EGP:egpAlign(285, 1)
-            EGP:egpParent(285, 287)
-            EGP:egpFont(285, "consolas", 27)
-            EGP_Indexes["BestScore", number] = 285
-        
-        #End Screen
-        EGP:egpBox(297, vec2(256,256), vec2(512,512))
-            EGP:egpColor(297, vec4(80,80,80, 0))
-            EGP_Indexes["EndBackground", number] = 297
-            
-        EGP:egpText(296, "You've lost!", vec2(256, 241))
-            EGP:egpAlign(296, 1, 2)
-            EGP:egpFont(296, "consolas", 40)
-            EGP:egpColor(296, vec4(210, 0, 0, 0))
-            EGP_Indexes["EndText", number] = 296
-            
-        EGP:egpText(295, "Score: 0", vec2(256, 256))
-            EGP:egpAlign(295, 1,1)
-            EGP:egpFont(295, "consolas", 30)
-            EGP:egpColor(295, vec4(255,255,255, 0))
-            EGP_Indexes["EndScore", number] = 295
-        EGP:egpText(291, "Best Score: "+BestScore, vec2(256, 273))
-            EGP:egpAlign(291, 1)
-            EGP:egpFont(291, "consolas", 30)
-            EGP:egpColor(291, vec4(255,255,255, 0))
-            EGP_Indexes["EndBestScore", number] = 291
-            
-        #Restart button
-        EGP:egpRoundedBox(294, vec2(424, 470), vec2(140, 50))
-            EGP:egpColor(294, vec(237,67,64))
-            EGP:egpRadius(294, 8)
-        EGP:egpRoundedBoxOutline(293, vec2(0,0), EGP:egpSize(294))
-            EGP:egpParent(293, 294)
-            EGP:egpSize(293, 2)
-            EGP:egpColor(293, vec(30,30,30))
-            EGP:egpRadius(293, 8)
-        EGP:egpText(292, "Give up", vec2(0,0))
-            EGP:egpParent(292, 294)
-            EGP:egpFont(292, "consolas", 30)
-            EGP:egpAlign(292, 1, 1)
-            EGP_Indexes["RestartButton", number] = 294
-            EGP_Indexes["RestartButton_Text", number] = 292
-            EGP_Indexes["RestartButton_EndPos", vector2] = vec2(256, 335)
-            EGP_Indexes["RestartButton_GamePos", vector2] = vec2(424, 470)
-            EGP_Indexes["RestartButton_EndColor", vector] = vec(90,203,135)
-            EGP_Indexes["RestartButton_GameColor", vector] = vec(237,67,64)
-            
-        #Lock button
-        EGP:egpRoundedBox(284, vec2(73, 470), vec2(110, 50))
-            EGP:egpColor(284, vec(240,64,64))
-            EGP:egpRadius(284, 8)
-        EGP:egpRoundedBoxOutline(283, vec2(0,0), EGP:egpSize(284))
-            EGP:egpParent(283, 284)
-            EGP:egpSize(283, 2)
-            EGP:egpColor(283, vec(30,30,30))
-            EGP:egpRadius(283, 8)
-        EGP:egpText(282, "Lock", vec2(0,0))
-            EGP:egpParent(282, 284)
-            EGP:egpFont(282, "consolas", 30)
-            EGP:egpAlign(282, 1, 1)
-            
-        Temp = EGP:egpSize(284):x()
-            
-            for(I=280, 281){
-                EGP:egpPos(I, vec2(Temp*0.5+5,0))
-                EGP:egpParent(I, 284)
-                EGP:egpFont(I, "consolas", 20)
-                EGP:egpColor(I, vec(20,20,20))
-            }
-            EGP_Indexes["LockButton", number] = 284
-            EGP_Indexes["LockButton_Text", number] = 282
-            EGP_Indexes["LockButton_LockColor", vector] = vec(240,64,64)
-            EGP_Indexes["LockButton_UnlockColor", vector] = vec(64,240,64)
+
+function printOwnerAI(Color:vector, Message:string){
+    printColor(vec(120,255,200), "[2048]: ", Color, Message)
+}
+
+function number isTimerRunning(Name:string){
+    foreach(_:number, V:string = getTimers()){
+        if( Name==V ){ return 1 }
     }
     
-    function updateScreen(){
-        if( !GameIsRunning ){ return }
-        
-        for(I=0, 3){
-            for(J=1+4*I, 4+4*I){
-                local SquareValue = toString( Field[J, number] )
+    return 0
+}
 
+function number addRandomTile(){
+    local FreeFieldsIndexes = array()
+    
+    foreach(I:number, V:number = Field){
+        if( V==0 ){ FreeFieldsIndexes:pushNumber(I) }
+    }
+    
+    if( FreeFieldsIndexes:count()==0 ){ return 0 }
+    
+    local Number = randint(1, 10)
+    if( Number<=9 ){ Number = 2 }
+    else{ Number = 4 }
+    
+    local RandomIndex = randint(1, FreeFieldsIndexes:count())
+    Field[FreeFieldsIndexes[RandomIndex, number], number] = Number
+    return 1
+}
+
+function initScreen(){
+    if( !GameIsRunning ){ return }
+    EGP:egpClear()
+    
+    EGP:egpBox(300, vec2(256,256), vec2(512,512))
+        EGP:egpColor(300, vec(250,248,238))
+        
+    EGP:egpRoundedBox(299, vec2(256, 256), vec2(352, 352))
+        EGP:egpColor(299, vec(189,173,158))
+        EGP:egpRadius(299, 4)
+        
+    EGP:egpBoxOutline(298, vec2(256,256), vec2(512,512))
+        EGP:egpSize(298, 6)
+        EGP:egpColor(298, vec(70,70,70))
+        
+    local Size299 = EGP:egpSize(299)
+    local Pos299 = EGP:egpPos(299)
+    local Gap = 7
+    local SizeW = Size299:x()/4-Gap*2
+    local SizeH = Size299:y()/4-Gap*2
+    
+    for(I=0, 3){
+        local CurX = Pos299:x()-Size299:x()*0.5+SizeW*0.5
+        local CurY = Pos299:y()-Size299:y()*0.5+(Size299:y()/4*I)+Gap+SizeH*0.5
+        
+        for(J=1+4*I, 4+4*I){
+            CurX+=Gap
+            local SquareValue = toString( Field[J, number] )
+            
+            EGP:egpRoundedBox(J, vec2(CurX, CurY), vec2(SizeW, SizeH))
                 EGP:egpColor(J, Parameters["Colors", table][SquareValue, vector])
-                    
-                EGP:egpSetText(J+16, SquareValue)
-                    EGP:egpColor(J+16, Parameters["Colors-text", table][SquareValue, vector4])
-            }
-        }
-        
-        if( Score>BestScore ){ BestScore=Score }
-        EGP:egpSetText( EGP_Indexes["BestScore", number], toString( BestScore ) )
-        EGP:egpSetText( EGP_Indexes["Score", number], toString( Score ) )
-    }
-    
-    function startGame(){
-        Score = 0
-        
-        Field:clear()
-        
-        for(_ = 1, 16){
-            Field:pushNumber(0)
-        }
-        
-        addRandomTile()
-        addRandomTile()
-        
-        GameIsRunning = 1
-        
-        EGP:egpAlpha( EGP_Indexes["EndText", number], 0 )
-        EGP:egpAlpha( EGP_Indexes["EndBackground", number], 0 )
-        EGP:egpAlpha( EGP_Indexes["EndScore", number], 0 )
-        EGP:egpAlpha( EGP_Indexes["EndBestScore", number], 0 )
-            
-        EGP:egpPos(EGP_Indexes["RestartButton", number], EGP_Indexes["RestartButton_GamePos", vector2])
-            EGP:egpColor(EGP_Indexes["RestartButton", number], EGP_Indexes["RestartButton_GameColor", vector])
-        
-        EGP:egpSetText(EGP_Indexes["RestartButton_Text", number], "Give up")
-        
-        initScreen()
-    }
-    
-    function initGame(){
-        if( !EGP:entity():isValid() ){
-            GameIsRunning = 0
-            hint("No EGP found! Say '!2048 restart' once connected!", 6)
-            return
-        }
-        
-        startGame()
-    }
-    
-    function number button(Index:number){
-        local Cursor = EGP:egpCursor(User)
-        return EGP:egpObjectContainsPoint(Index, Cursor)
-    }
-    
-    function cooldown(){
-        stoptimer("Cooldown")
-        timer("Cooldown", SETTINGS_MoveCooldown)
-        
-        for(I=200, 203){
-            EGP:egpColor(I, vec(70,70,70))
-        }
-    }
-    
-    function array mergeLine(Line:array){
-        assert(Line:count()==4, "mergeLine: Line:count() != 4")
-        
-        if( Line:average()==0 ){ return Line }
-        
-        local TempArray = Line
-        local Index = 1
-        local Count = TempArray:count()
-        
-        for( I=1, Count ){
-            if( TempArray[I, number]!=0 ){
-                TempArray[Index, number] = TempArray[I, number]
-                Index = Index + 1
-            }
-        }
-        
-        for( I=Index, Count ){
-            TempArray[I] = 0
-        }
-        
-        for( I=1, Count-1 ){
-            if( TempArray[I, number]==TempArray[I+1, number] ){
-                TempArray[I, number] = TempArray[I, number] * 2
-                Score += TempArray[I, number] * 2
-                TempArray[I+1, number] = 0
-            }
-        }
-        
-        Index = 1
-        
-        for( I=1, Count ){
-            if( TempArray[I, number]!=0 ){
-                TempArray[Index, number] = TempArray[I, number]
-                Index = Index + 1
-            }
-        }
-        
-        for( I=Index, Count ){
-            TempArray[I, number] = 0
-        }
-        
-        #[for(I=1, 3){ # -- Auto merging all possible
-            if(TempArray[I, number]!=0){
-                local J = I+1
+                EGP:egpRadius(J, 4)
                 
-                while( J<=4 ){
-                    if( TempArray[J, number]==0 ){
-                        TempArray[J, number] = TempArray[J-1, number]
-                        TempArray[J-1, number] = 0
-                    } elseif( TempArray[J, number]==TempArray[J-1, number] ){
-                        TempArray[J, number] = 2*TempArray[J, number]
-                        TempArray[J-1, number] = 0
-                        break
-                    } else{
-                        break
-                    }
-                    
-                    J = J + 1
-                }
-            }
-        }]#
-        
-        return TempArray
-    }
-    
-    function array:setColumn(Index:number, NewColumn:array){
-        for(I=0, 3){
-            This[Index+I*4, number] = NewColumn[I+1, number]
+            EGP:egpText(J+16, SquareValue, vec2(0,0))
+                EGP:egpParent(J+16, J)
+                EGP:egpAlign(J+16, 1, 1)
+                EGP:egpFont(J+16, "consolas", Size299:x()*0.1)
+                EGP:egpColor(J+16, Parameters["Colors-text", table][SquareValue, vector4])
+                
+            CurX+=SizeW+Gap
         }
     }
     
-    function array array:getColumn(Index:number){
-        local TempArray = array()
+    local Size = 70
+    local Temp = Pos299:y()
+    
+    EGP:egpText(281, "Locked by:", vec2(0,0))
+        EGP:egpAlign(281, 0, 2)
+    EGP:egpText(280, "N/A", vec2(0,0))
+    EGP_Indexes["LockButton_Name", number] = 280
+    
+    #left
+    EGP:egpBox(200, vec2(40, Temp), vec2(Size))
+        EGP:egpAngle(200, -90)
+        EGP_Indexes["Left", number] = 200
+    #right
+    EGP:egpBox(201, vec2(472, Temp), vec2(Size))
+        EGP:egpAngle(201, 90)
+        EGP_Indexes["Right", number] = 201
         
-        for(I=0, 3){
-            TempArray[I+1, number] = This[Index+I*4, number]
-        }
-        
-        return TempArray
+    Temp = Pos299:x()
+    #up
+    EGP:egpBox(202, vec2(Temp, 40), vec2(Size))
+        EGP:egpAngle(202, 180)
+        EGP_Indexes["Up", number] = 202
+    #down
+    EGP:egpBox(203, vec2(Temp, 472), vec2(Size))
+        EGP:egpAngle(203, 0)
+        EGP_Indexes["Down", number] = 203
+    
+    for(I=200, 203){
+        EGP:egpMaterial(I, "gui/point.png")
+        EGP:egpColor(I, vec(0,215,40))
     }
     
-    function array:setRow(Index:number, NewRow:array){
-        local RowIndex = (Index-1)*4+1
+    #Scores
+        #Score
+    EGP:egpRoundedBox(290, vec2(128, 42), vec2(128, 64))
+        EGP:egpColor(290, vec(183,173,161))
+        EGP:egpRadius(290, 4)
+    EGP:egpText(289, "SCORE", vec2(0,0))
+        EGP:egpAlign(289, 1, 2)
+        EGP:egpParent(289, 290)
+        EGP:egpFont(289, "consolas", 27)
+    EGP:egpText(288, "0", vec2(0,0))
+        EGP:egpAlign(288, 1)
+        EGP:egpParent(288, 290)
+        EGP:egpFont(288, "consolas", 27)
+        EGP_Indexes["Score", number] = 288
+
+        #Best Score
+    EGP:egpRoundedBox(287, vec2(384, 42), vec2(128, 64))
+        EGP:egpColor(287, vec(183,173,161))
+        EGP:egpRadius(287, 4)
+    EGP:egpText(286, "BEST", vec2(0,0))
+        EGP:egpAlign(286, 1, 2)
+        EGP:egpParent(286, 287)
+        EGP:egpFont(286, "consolas", 27)
+    EGP:egpText(285, toString( BestScore ), vec2(0,0))
+        EGP:egpAlign(285, 1)
+        EGP:egpParent(285, 287)
+        EGP:egpFont(285, "consolas", 27)
+        EGP_Indexes["BestScore", number] = 285
+    
+    #End Screen
+    EGP:egpBox(297, vec2(256,256), vec2(512,512))
+        EGP:egpColor(297, vec4(80,80,80, 0))
+        EGP_Indexes["EndBackground", number] = 297
         
-        for(I=0, 3){
-            This[RowIndex+I, number] = NewRow[I+1, number]
+    EGP:egpText(296, "You've lost!", vec2(256, 241))
+        EGP:egpAlign(296, 1, 2)
+        EGP:egpFont(296, "consolas", 40)
+        EGP:egpColor(296, vec4(210, 0, 0, 0))
+        EGP_Indexes["EndText", number] = 296
+        
+    EGP:egpText(295, "Score: 0", vec2(256, 256))
+        EGP:egpAlign(295, 1,1)
+        EGP:egpFont(295, "consolas", 30)
+        EGP:egpColor(295, vec4(255,255,255, 0))
+        EGP_Indexes["EndScore", number] = 295
+    EGP:egpText(291, "Best Score: "+BestScore, vec2(256, 273))
+        EGP:egpAlign(291, 1)
+        EGP:egpFont(291, "consolas", 30)
+        EGP:egpColor(291, vec4(255,255,255, 0))
+        EGP_Indexes["EndBestScore", number] = 291
+        
+    #Restart button
+    EGP:egpRoundedBox(294, vec2(424, 470), vec2(140, 50))
+        EGP:egpColor(294, vec(237,67,64))
+        EGP:egpRadius(294, 8)
+    EGP:egpRoundedBoxOutline(293, vec2(0,0), EGP:egpSize(294))
+        EGP:egpParent(293, 294)
+        EGP:egpSize(293, 2)
+        EGP:egpColor(293, vec(30,30,30))
+        EGP:egpRadius(293, 8)
+    EGP:egpText(292, "Give up", vec2(0,0))
+        EGP:egpParent(292, 294)
+        EGP:egpFont(292, "consolas", 30)
+        EGP:egpAlign(292, 1, 1)
+        EGP_Indexes["RestartButton", number] = 294
+        EGP_Indexes["RestartButton_Text", number] = 292
+        EGP_Indexes["RestartButton_EndPos", vector2] = vec2(256, 335)
+        EGP_Indexes["RestartButton_GamePos", vector2] = vec2(424, 470)
+        EGP_Indexes["RestartButton_EndColor", vector] = vec(90,203,135)
+        EGP_Indexes["RestartButton_GameColor", vector] = vec(237,67,64)
+        
+    #Lock button
+    EGP:egpRoundedBox(284, vec2(73, 470), vec2(110, 50))
+        EGP:egpColor(284, vec(240,64,64))
+        EGP:egpRadius(284, 8)
+    EGP:egpRoundedBoxOutline(283, vec2(0,0), EGP:egpSize(284))
+        EGP:egpParent(283, 284)
+        EGP:egpSize(283, 2)
+        EGP:egpColor(283, vec(30,30,30))
+        EGP:egpRadius(283, 8)
+    EGP:egpText(282, "Lock", vec2(0,0))
+        EGP:egpParent(282, 284)
+        EGP:egpFont(282, "consolas", 30)
+        EGP:egpAlign(282, 1, 1)
+        
+    Temp = EGP:egpSize(284):x()
+        
+        for(I=280, 281){
+            EGP:egpPos(I, vec2(Temp*0.5+5,0))
+            EGP:egpParent(I, 284)
+            EGP:egpFont(I, "consolas", 20)
+            EGP:egpColor(I, vec(20,20,20))
+        }
+        EGP_Indexes["LockButton", number] = 284
+        EGP_Indexes["LockButton_Text", number] = 282
+        EGP_Indexes["LockButton_LockColor", vector] = vec(240,64,64)
+        EGP_Indexes["LockButton_UnlockColor", vector] = vec(64,240,64)
+}
+
+function updateScreen(){
+    if( !GameIsRunning ){ return }
+    
+    for(I=0, 3){
+        for(J=1+4*I, 4+4*I){
+            local SquareValue = toString( Field[J, number] )
+
+            EGP:egpColor(J, Parameters["Colors", table][SquareValue, vector])
+                
+            EGP:egpSetText(J+16, SquareValue)
+                EGP:egpColor(J+16, Parameters["Colors-text", table][SquareValue, vector4])
         }
     }
     
-    function array array:getRow(Index:number){
-        local TempArray = array()
-        local RowIndex = (Index-1)*4+1
-        
-        for(I=0, 3){
-            TempArray[I+1, number] = This[RowIndex+I, number]
-        }
-        
-        return TempArray
+    if( Score>BestScore ){ BestScore=Score }
+    EGP:egpSetText( EGP_Indexes["BestScore", number], toString( BestScore ) )
+    EGP:egpSetText( EGP_Indexes["Score", number], toString( Score ) )
+}
+
+function startGame(){
+    entity():emitSound(SETTINGS_SOUND_GameStarted)
+    Score = 0
+    
+    Field:clear()
+    
+    for(_ = 1, 16){
+        Field:pushNumber(0)
     }
     
-    function array array:reverse(){
-        if( This:count()==0 ){ return This }
-        
-        local TempArray = array()
-        local Count = This:count()
-        
-        for(I=1, Count){
-            TempArray[Count-I+1, number] = This[I, number]
-        }
-        
-        return TempArray
-    }
+    addRandomTile()
+    addRandomTile()
     
-    function number array:isEqualTo(Array:array){
-        foreach(I:number, V:number = This){
-            if( V!=Array[I, number] ){ return 0 }
-        }
-        
-        return 1
-    }
+    GameIsRunning = 1
     
-    function gameOver(){
-        local IsWin = 0
+    EGP:egpAlpha( EGP_Indexes["EndText", number], 0 )
+    EGP:egpAlpha( EGP_Indexes["EndBackground", number], 0 )
+    EGP:egpAlpha( EGP_Indexes["EndScore", number], 0 )
+    EGP:egpAlpha( EGP_Indexes["EndBestScore", number], 0 )
+        
+    EGP:egpPos(EGP_Indexes["RestartButton", number], EGP_Indexes["RestartButton_GamePos", vector2])
+        EGP:egpColor(EGP_Indexes["RestartButton", number], EGP_Indexes["RestartButton_GameColor", vector])
+    
+    EGP:egpSetText(EGP_Indexes["RestartButton_Text", number], "Give up")
+    
+    initScreen()
+}
+
+function initGame(){
+    if( !EGP:entity():isValid() ){
         GameIsRunning = 0
-        
-        foreach(_:number, V:number = Field){
-            if( V>=2048 ){
-                IsWin = 1
-                break
-            }
-        }
-        
-        local Message = "Game Over!"
-        local TextColor = vec4(90,90,80, 255)
-        local BGColor = vec4(110,110,100, 150)
-        
-        if( IsWin ){
-            Message = "You've Won!"
-            TextColor = vec4(255,250,235, 255)
-            BGColor = vec4(225,185,65, 140)
-            
-            if( !MuteSound ){
-                EGP:entity():emitSound(SETTINGS_SOUND_Win)
-            }
-        } elseif( !MuteSound ){
-            EGP:entity():emitSound(SETTINGS_SOUND_Lose)
-        }
-        
-        if( ChatAnnouncement ){
-            if( convarnum("wire_expression2_concmd")==0 ){
-                hint("Warning: ChatAnnouncement is set to 1, while wire_expression2_concmd = 0!", 7)
-            } else{
-                local ConCmdMessage = "lost"
-                if( IsWin ){
-                    ConCmdMessage = "won"
-                }
-                
-                concmd("say \""+LastPlayerEnt:name()+" "+ConCmdMessage+" 2048 game with score: "+Score+"!")
-            }
-        }
-        
-        EGP:egpSetText( EGP_Indexes["EndText", number], Message )
-            EGP:egpColor( EGP_Indexes["EndText", number], TextColor )
-        
-        EGP:egpColor( EGP_Indexes["EndBackground", number], BGColor )
-        
-        EGP:egpSetText(EGP_Indexes["EndScore", number], "Score: "+Score)
-            EGP:egpColor(EGP_Indexes["EndScore", number], vec4(240,240,240, 255))
-            
-        EGP:egpSetText(EGP_Indexes["EndBestScore", number], "Best Score: "+BestScore)
-            EGP:egpColor(EGP_Indexes["EndBestScore", number], vec4(240,240,240, 255))
-            
-        EGP:egpPos(EGP_Indexes["RestartButton", number], EGP_Indexes["RestartButton_EndPos", vector2])
-            EGP:egpColor(EGP_Indexes["RestartButton", number], EGP_Indexes["RestartButton_EndColor", vector])
-        
-        EGP:egpSetText(EGP_Indexes["RestartButton_Text", number], "Restart")
-    }
-    
-    function isGameOver(){
-        if( AutoWin ){
-            foreach(_:number, V:number = Field){
-                if( V>=2048 ){
-                    gameOver()
-                    return
-                }
-            }
-        }
-        
-        foreach(_:number, V:number = Field){
-            if( V==0 ){ return }
-        }
-        
-        local CachedField = Field:clone()
-        local NewField = array(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)
-        local CachedScore = Score
-        
-        for(I=1, 4){
-            NewField:setRow(I, mergeLine(Field:getRow(I)))
-        }
-        for(I=1, 4){
-            local ReversedLine = Field:getRow(I):reverse()
-            NewField:setRow(I, mergeLine(ReversedLine):reverse())
-        }
-        for(I=1, 4){
-            NewField:setColumn(I, mergeLine(Field:getColumn(I)))
-        }
-        for(I=1, 4){
-            local ReversedLine = Field:getColumn(I):reverse()
-            NewField:setColumn(I, mergeLine(ReversedLine):reverse())
-        }
-        
-        Score = CachedScore
-        
-        if( CachedField:isEqualTo(NewField) ){
-            gameOver()
-        }
-        
+        hint("No EGP found! Say '!2048 restart' once connected!", 6)
         return
     }
     
-    function number move(Type:string){
-        if( !GameIsRunning ){ return 0 }
-        local CachedField = Field:clone()
-        
-        switch(Type){
-            case "left",
-                for(I=1, 4){
-                    print(_HUD_PRINTCONSOLE, I+": Original = "+toString( Field:getRow(I) )+" New = "+toString( mergeLine(Field:getRow(I)) ))
-                    Field:setRow(I, mergeLine(Field:getRow(I)))
-                }
-            break
-            case "right",
-                for(I=1, 4){
-                    local ReversedLine = Field:getRow(I):reverse()
-                    Field:setRow(I, mergeLine(ReversedLine):reverse())
-                }
-            break
-            case "up",
-                for(I=1, 4){
-                    Field:setColumn(I, mergeLine(Field:getColumn(I)))
-                }
-            break
-            case "down",
-                for(I=1, 4){
-                    local ReversedLine = Field:getColumn(I):reverse()
-                    Field:setColumn(I, mergeLine(ReversedLine):reverse())
-                }
-            break
+    startGame()
+}
+
+function number button(Index:number){
+    local Cursor = EGP:egpCursor(User)
+    return EGP:egpObjectContainsPoint(Index, Cursor)
+}
+
+function cooldown(){
+    stoptimer("Cooldown")
+    timer("Cooldown", SETTINGS_MoveCooldown)
+    
+    for(I=200, 203){
+        EGP:egpColor(I, vec(70,70,70))
+    }
+}
+
+function array mergeLine(Line:array){
+    assert(Line:count()==4, "mergeLine: Line:count() != 4")
+    
+    if( Line:average()==0 ){ return Line }
+    
+    local TempArray = Line
+    local Index = 1
+    local Count = TempArray:count()
+    
+    for( I=1, Count ){
+        if( TempArray[I, number]!=0 ){
+            TempArray[Index, number] = TempArray[I, number]
+            Index = Index + 1
         }
-        
-        isGameOver()
-        #print(CachedField, Field, Field:isEqualTo(CachedField))
-        if( GameIsRunning && !Field:isEqualTo(CachedField) ){
-            cooldown()
-            timer("AddRandomTile", SETTINGS_MoveCooldown*0.5)
-            updateScreen()
-            if( !MuteSound ){ EGP:entity():emitSound(SETTINGS_SOUND_MoveAccepted) }
-        }elseif( !MuteSound ){
-            EGP:entity():emitSound(SETTINGS_SOUND_MoveDenied)
-        }
-        return 0
     }
     
-    function lock(Owner:entity){
-        LastPlayerEnt = Owner
+    for( I=Index, Count ){
+        TempArray[I] = 0
+    }
+    
+    for( I=1, Count-1 ){
+        if( TempArray[I, number]==TempArray[I+1, number] ){
+            TempArray[I, number] = TempArray[I, number] * 2
+            Score += TempArray[I, number] * 2
+            TempArray[I+1, number] = 0
+        }
+    }
+    
+    Index = 1
+    
+    for( I=1, Count ){
+        if( TempArray[I, number]!=0 ){
+            TempArray[Index, number] = TempArray[I, number]
+            Index = Index + 1
+        }
+    }
+    
+    for( I=Index, Count ){
+        TempArray[I, number] = 0
+    }
+    
+    return TempArray
+}
+
+function array:setColumn(Index:number, NewColumn:array){
+    for(I=0, 3){
+        This[Index+I*4, number] = NewColumn[I+1, number]
+    }
+}
+
+function array array:getColumn(Index:number){
+    local TempArray = array()
+    
+    for(I=0, 3){
+        TempArray[I+1, number] = This[Index+I*4, number]
+    }
+    
+    return TempArray
+}
+
+function array:setRow(Index:number, NewRow:array){
+    local RowIndex = (Index-1)*4+1
+    
+    for(I=0, 3){
+        This[RowIndex+I, number] = NewRow[I+1, number]
+    }
+}
+
+function array array:getRow(Index:number){
+    local TempArray = array()
+    local RowIndex = (Index-1)*4+1
+    
+    for(I=0, 3){
+        TempArray[I+1, number] = This[RowIndex+I, number]
+    }
+    
+    return TempArray
+}
+
+function array array:reverse(){
+    if( This:count()==0 ){ return This }
+    
+    local TempArray = array()
+    local Count = This:count()
+    
+    for(I=1, Count){
+        TempArray[Count-I+1, number] = This[I, number]
+    }
+    
+    return TempArray
+}
+
+function number array:isEqualTo(Array:array){
+    foreach(I:number, V:number = This){
+        if( V!=Array[I, number] ){ return 0 }
+    }
+    
+    return 1
+}
+
+function gameOver(){
+    local IsWin = 0
+    GameIsRunning = 0
+    
+    foreach(_:number, V:number = Field){
+        if( V>=2048 ){
+            IsWin = 1
+            break
+        }
+    }
+    
+    local Message = "Game Over!"
+    local TextColor = vec4(90,90,80, 255)
+    local BGColor = vec4(110,110,100, 150)
+    
+    if( IsWin ){
+        Message = "You've Won!"
+        TextColor = vec4(255,250,235, 255)
+        BGColor = vec4(225,185,65, 140)
         
-        if( !IsLocked ){
-            IsLocked = 1
-            
-            EGP:egpSetText( EGP_Indexes["LockButton_Name", number], LastPlayerEnt:name() )
-            EGP:egpColor( EGP_Indexes["LockButton", number], EGP_Indexes["LockButton_UnlockColor", vector] )
-            EGP:egpSetText( EGP_Indexes["LockButton_Text", number], "Unlock" )
+        if( !MuteSound ){
+            EGP:entity():emitSound(SETTINGS_SOUND_Win)
+        }
+    } elseif( !MuteSound ){
+        EGP:entity():emitSound(SETTINGS_SOUND_Lose)
+    }
+    
+    if( ChatAnnouncement ){
+        if( convarnum("wire_expression2_concmd")==0 ){
+            hint("Warning: ChatAnnouncement is set to 1, while wire_expression2_concmd = 0!", 7)
         } else{
-            IsLocked = 0
+            local ConCmdMessage = "lost"
+            if( IsWin ){
+                ConCmdMessage = "won"
+            }
             
-            EGP:egpSetText( EGP_Indexes["LockButton_Name", number], "N/A" )
-            EGP:egpColor( EGP_Indexes["LockButton", number], EGP_Indexes["LockButton_LockColor", vector] )
-            EGP:egpSetText( EGP_Indexes["LockButton_Text", number], "Lock" )
+            concmd("say \""+LastPlayerEnt:name()+" "+ConCmdMessage+" 2048 game with score: "+Score+"!")
         }
     }
     
+    EGP:egpSetText( EGP_Indexes["EndText", number], Message )
+        EGP:egpColor( EGP_Indexes["EndText", number], TextColor )
+    
+    EGP:egpColor( EGP_Indexes["EndBackground", number], BGColor )
+    
+    EGP:egpSetText(EGP_Indexes["EndScore", number], "Score: "+Score)
+        EGP:egpColor(EGP_Indexes["EndScore", number], vec4(240,240,240, 255))
+        
+    EGP:egpSetText(EGP_Indexes["EndBestScore", number], "Best Score: "+BestScore)
+        EGP:egpColor(EGP_Indexes["EndBestScore", number], vec4(240,240,240, 255))
+        
+    EGP:egpPos(EGP_Indexes["RestartButton", number], EGP_Indexes["RestartButton_EndPos", vector2])
+        EGP:egpColor(EGP_Indexes["RestartButton", number], EGP_Indexes["RestartButton_EndColor", vector])
+    
+    EGP:egpSetText(EGP_Indexes["RestartButton_Text", number], "Restart")
+}
+
+function isGameOver(){
+    if( AutoWin ){
+        foreach(_:number, V:number = Field){
+            if( V>=2048 ){
+                gameOver()
+                return
+            }
+        }
+    }
+    
+    foreach(_:number, V:number = Field){
+        if( V==0 ){ return }
+    }
+    
+    local CachedField = Field:clone()
+    local NewField = array(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)
+    local CachedScore = Score
+    
+    for(I=1, 4){
+        NewField:setRow(I, mergeLine(Field:getRow(I)))
+    }
+    for(I=1, 4){
+        local ReversedLine = Field:getRow(I):reverse()
+        NewField:setRow(I, mergeLine(ReversedLine):reverse())
+    }
+    for(I=1, 4){
+        NewField:setColumn(I, mergeLine(Field:getColumn(I)))
+    }
+    for(I=1, 4){
+        local ReversedLine = Field:getColumn(I):reverse()
+        NewField:setColumn(I, mergeLine(ReversedLine):reverse())
+    }
+    
+    Score = CachedScore
+    
+    if( CachedField:isEqualTo(NewField) ){
+        gameOver()
+    }
+    
+    return
+}
+
+function number move(Type:string){
+    if( !GameIsRunning ){ return 0 }
+    local CachedField = Field:clone()
+    
+    switch(Type){
+        case "left",
+            for(I=1, 4){
+                print(_HUD_PRINTCONSOLE, I+": Original = "+toString( Field:getRow(I) )+" New = "+toString( mergeLine(Field:getRow(I)) ))
+                Field:setRow(I, mergeLine(Field:getRow(I)))
+            }
+        break
+        case "right",
+            for(I=1, 4){
+                local ReversedLine = Field:getRow(I):reverse()
+                Field:setRow(I, mergeLine(ReversedLine):reverse())
+            }
+        break
+        case "up",
+            for(I=1, 4){
+                Field:setColumn(I, mergeLine(Field:getColumn(I)))
+            }
+        break
+        case "down",
+            for(I=1, 4){
+                local ReversedLine = Field:getColumn(I):reverse()
+                Field:setColumn(I, mergeLine(ReversedLine):reverse())
+            }
+        break
+    }
+    
+    isGameOver()
+
+    if( GameIsRunning && !Field:isEqualTo(CachedField) ){
+        cooldown()
+        timer("AddRandomTile", SETTINGS_MoveCooldown*0.5)
+        updateScreen()
+        if( !MuteSound ){ EGP:entity():emitSound(SETTINGS_SOUND_MoveAccepted) }
+    }elseif( !MuteSound ){
+        EGP:entity():emitSound(SETTINGS_SOUND_MoveDenied)
+    }
+    return 0
+}
+
+function lock(Owner:entity){
+    LastPlayerEnt = Owner
+    
+    if( !IsLocked ){
+        IsLocked = 1
+        
+        EGP:egpSetText( EGP_Indexes["LockButton_Name", number], LastPlayerEnt:name() )
+        EGP:egpColor( EGP_Indexes["LockButton", number], EGP_Indexes["LockButton_UnlockColor", vector] )
+        EGP:egpSetText( EGP_Indexes["LockButton_Text", number], "Unlock" )
+    } else{
+        IsLocked = 0
+        
+        EGP:egpSetText( EGP_Indexes["LockButton_Name", number], "N/A" )
+        EGP:egpColor( EGP_Indexes["LockButton", number], EGP_Indexes["LockButton_LockColor", vector] )
+        EGP:egpSetText( EGP_Indexes["LockButton_Text", number], "Lock" )
+    }
+}
+    
+    
+
+if( first() || dupefinished() ){
     initGame()
     
     printOwnerAI(vec(120,255,120), "Check console for instructions!")
@@ -693,7 +680,6 @@ event tick() {
     }
     
     KeyBoardEnt["ActiveKeyCodeCache", number] = Key
-    #print( KeyBoardEnt["CachedLength", number]:length(), KeyBoardOutput:length(), KeyBoard["CachedLength", number]:length() == KeyBoardOutput:length() )
 }
 
 event chat(Player:entity, Message:string, Team:number) {

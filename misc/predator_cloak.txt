@@ -1,19 +1,23 @@
 @name Predator Cloak Device v1 by deltamolfar
 @persist SETTINGS:table CloakOn CooldownHintRequested
-#@strict
+@strict
 
 #[
-    Chip made to give you predator's cloaking device!
-    To use: press specified SETTINGS["CloakKey", string] key. (Default - k).
-    It will get disabled if - owner took damage/owner used a weapon.
+    A cloak (makes you invisible but in a bit balanced way (you can't shoot/receive damage)).
+    Instructions:
+    - Spawn it.
+    - Press 'g'. (Or change it on line 28)
+        (You can also obv tweak other settings)
+    - You're invisible
     
     ###################################
+    ##         Predator cloak        ##
     ##      made by deltamolfar      ##
     ##        Glory to Ukraine       ##
     ###################################
     
     This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
-    If you change anything in this code, don't expect me to help you.
+    If you want to change something, and help others, feel free to create an issue/PR.
 ]#
 
 if( first() || duped() ){
@@ -22,7 +26,7 @@ if( first() || duped() ){
     
     SETTINGS = table()
     SETTINGS["CloakKey", string] = "k"
-    SETTINGS["CloakMaterial", string] = "models/shadertest/predator"
+    SETTINGS["CloakMaterial", string] = "models/shadertest/shader3"#"models/shadertest/predator"
     SETTINGS["SOUND", table] = table(
         "CLOAK_ENABLED" = "buttons/combine_button1.wav",
         "CLOAK_ENABLED_PITCH" = 70,
@@ -154,7 +158,7 @@ event keyPressed(Player:entity, Key:string, Down:number, KeyBind:string) {
             }
         }
     } elseif( KeyBind=="attack" && CloakOn ){
-        if( !owner():holdingLegalWeapon() ){
+        if( !owner():holdingLegalWeapon() && !owner():keyPressed("q") && !owner():keyPressed("c") ){
             timer("WeaponFired", 250)
         }
     }

@@ -1,17 +1,22 @@
 @name Flashbang v1 by deltamolfar
 @persist [SETTINGS Blindness]:table Grenade:entity
-#@strict
+@strict
 
 #[
-    Chip made for being able to use flashbang. Required CS:S content in default configuration.
+    A Counter-Strike:Source like flashbang (requires CSS)
+    Instructions:
+    - Spawn it.
+    - Press 'g'. (Or change it on line 34)
+        (You can also obv tweak other settings)
     
     ###################################
+    ##           Flashbang           ##
     ##      made by deltamolfar      ##
     ##        Glory to Ukraine       ##
     ###################################
     
     This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
-    If you change anything in this code, don't expect me to help you.
+    If you want to change something, and help others, feel free to create an issue/PR.
 ]#
 
 if( first() || duped() ){
@@ -30,9 +35,10 @@ if( first() || duped() ){
     SETTINGS["FlashModel", string] = "models/weapons/w_eq_flashbang_thrown.mdl"
     SETTINGS["FlashModel_Scale", vector] = vec(2)
     SETTINGS["FlashDelay", number] = 2.5 # -- How many seconds before explosion?
-    SETTINGS["Flashed_Stage_1", number] = 3 # -- For how much time should player be fully blind?
-    SETTINGS["Flashed_Stage_2", number] = 4 # -- During how much time should blindness fade away?
-    SETTINGS["Cooldown", number] = 10 # -- How many seconds before being able to throw again?
+    SETTINGS["Flashed_Stage_1", number] = 2 # -- For how much time should player be fully blind?
+    SETTINGS["Flashed_Stage_2", number] = 3 # -- During how much time should blindness fade away?
+    SETTINGS["Flashed_Color", vector] = vec(0) # -- 255 to make a flashlight white, 0 to black, any other comibnation for different colors.
+    SETTINGS["Cooldown", number] = 20 # -- How many seconds before being able to throw again?
     SETTINGS["Force", number] = 550000 # -- With how much force should you throw grenade?
     SETTINGS["Radius", number] = 1000 # -- How far from grenade should it flash?
     
@@ -108,7 +114,7 @@ function grenade_Explode(){
             local Index = I
             if( J==2 ){ Index = holoMaxAmount()-I }
             #holoCreate(Index, V:attachmentPos("eyes"), vec(2*J), V:attachmentAng("eyes"), vec4(255), "hq_sphere")
-            holoCreate(Index, Weapon:pos(), vec(2*J, 2*J, 4*J), Weapon:angles(), vec4(255), "hq_sphere")
+            holoCreate(Index, Weapon:pos(), vec(2*J, 2*J, 4*J), Weapon:angles(), SETTINGS["Flashed_Color", vector], "hq_sphere")
                 holoInvertModel(Index, 1)
                 holoDisableShading(Index, 1)
                 holoShadow(Index, 0)

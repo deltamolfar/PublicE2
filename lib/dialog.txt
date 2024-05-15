@@ -1,4 +1,4 @@
-@persist TABLE:table
+@persist LIB_DIALOG_INTERNAL_Table:table
 
 #[
     WIP
@@ -14,28 +14,29 @@
         ),
         0 <-- Tells that sound should NOT be looped
     )
-    
+
     soundRowPlay("Test") <-- Executes the sound.
-  
+
     ###################################
+    ##           DialogLib           ##
     ##      made by deltamolfar      ##
     ##        Glory to Ukraine       ##
     ###################################
-    
+
     This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
-    If you change anything in this code, don't expect me to help you.
+    If you want to change something, and help others, feel free to create an issue/PR.
 ]#
 
 if( first() || duped() ){
-    TABLE = table()
+    LIB_DIALOG_INTERNAL_Table = table()
 }
 
 function addSoundRowSound(Name:string, Path:string, Duration:number, Pitch:number, SoundLevel:number, Volume:number){
-    TABLE[Name, table]["PATH", array]:pushString(Path)
-    TABLE[Name, table]["DELAY", array]:pushNumber(Duration)
-    TABLE[Name, table]["PITCH", array]:pushNumber(Pitch)
-    TABLE[Name, table]["SOUND_LEVEL", array]:pushNumber(SoundLevel)
-    TABLE[Name, table]["VOLUME", array]:pushNumber(clamp(Volume, 0, 1))
+    LIB_DIALOG_INTERNAL_Table[Name, table]["PATH", array]:pushString(Path)
+    LIB_DIALOG_INTERNAL_Table[Name, table]["DELAY", array]:pushNumber(Duration)
+    LIB_DIALOG_INTERNAL_Table[Name, table]["PITCH", array]:pushNumber(Pitch)
+    LIB_DIALOG_INTERNAL_Table[Name, table]["SOUND_LEVEL", array]:pushNumber(SoundLevel)
+    LIB_DIALOG_INTERNAL_Table[Name, table]["VOLUME", array]:pushNumber(clamp(Volume, 0, 1))
 }
 
 function addSoundRowSound(Name:string, Path:string, Duration:number, Pitch:number, SoundLevel:number){
@@ -52,8 +53,8 @@ function addSoundRowSound(Name:string, Path:string, Duration:number){
 
 function soundRow(Name:string){
     assert(Name!="", "soundRow(...) -> You can't register sound object with no name!")
-    
-    TABLE[Name, table] = table(
+
+    LIB_DIALOG_INTERNAL_Table[Name, table] = table(
         "CurrentSound" = 1,
         "IsPlaying" = 0,
         "SoundOrigin" = noentity(),
@@ -68,14 +69,14 @@ function soundRow(Name:string){
 
 function soundRow(Name:string, Looping:number){
     soundRow(Name)
-    TABLE[Name, table]["Loop", number] = Looping
+    LIB_DIALOG_INTERNAL_Table[Name, table]["Loop", number] = Looping
 }
 
 function soundRow(Name:string, Paths:array, Durations:array){
     soundRow(Name)
-    
+
     assert( Paths:count()==Durations:count(), "soundRow(NR) -> You can't pass different number of sound paths and durations!" )
-    
+
     for(I=1, Paths:count()){
         addSoundRowSound(Name, Paths[I, string], Durations[I, number])
     }
@@ -83,51 +84,51 @@ function soundRow(Name:string, Paths:array, Durations:array){
 
 function soundRow(Name:string, Paths:array, Durations:array, Looping:number){
     soundRow(Name, Paths, Durations)
-    TABLE[Name, table]["Loop", number] = Looping
+    LIB_DIALOG_INTERNAL_Table[Name, table]["Loop", number] = Looping
 }
 
 function soundRow_setLooping(Name:string, Value:number){
-    assert(TABLE[Name, table]:count()==0, "soundRow_setLooping(SN) -> You can't play sound object with no sounds!")
-    
-    TABLE[Name, table]["Loop", number] = Value
+    assert(LIB_DIALOG_INTERNAL_Table[Name, table]:count()==0, "soundRow_setLooping(SN) -> You can't play sound object with no sounds!")
+
+    LIB_DIALOG_INTERNAL_Table[Name, table]["Loop", number] = Value
 }
 
 function soundRowPlay(Name:string){
-    assert(TABLE[Name, table]:count()!=0, "soundRowPlay(S) -> You can't play sound object with no sounds!")
-    TABLE[Name, table]["SoundOrigin", entity] = noentity()
-    TABLE[Name, table]["IsPlaying", number] = 1
-    
+    assert(LIB_DIALOG_INTERNAL_Table[Name, table]:count()!=0, "soundRowPlay(S) -> You can't play sound object with no sounds!")
+    LIB_DIALOG_INTERNAL_Table[Name, table]["SoundOrigin", entity] = noentity()
+    LIB_DIALOG_INTERNAL_Table[Name, table]["IsPlaying", number] = 1
+
     timer("_SOUNDROW_"+Name, 5)
 }
 
 function entity:soundRowPlay(Name:string){
-    assert(TABLE[Name, table]:count()==0, "soundRowPlay(S) -> You can't play sound object with no sounds!")
+    assert(LIB_DIALOG_INTERNAL_Table[Name, table]:count()==0, "soundRowPlay(S) -> You can't play sound object with no sounds!")
     assert(This:isValid(), "Sound parent isn't valid!")
-    
+
     soundRowPlay(Name)
-    
-    TABLE[Name, table]["SoundOrigin", entity] = This
+
+    LIB_DIALOG_INTERNAL_Table[Name, table]["SoundOrigin", entity] = This
 }
 
 function soundRowStop(Name:string){
-    local SoundRowTable = TABLE[Name, table]
+    local SoundRowTable = LIB_DIALOG_INTERNAL_Table[Name, table]
     assert(SoundRowTable:count()!=0, "soundRowStop(S) -> You can't stop sound object from playing with no sounds!")
-    
+
     local Origin = entity()
     if( SoundRowTable["SoundOrigin", entity]:isValid() ){
         Origin = SoundRowTable["SoundOrigin", entity]
     }
-    
+
     foreach(_:number, V:string = SoundRowTable["PATH", array]){
         Origin:emitSoundStop(V)
     }
 }
 
-if( TABLE[clkName():replace("_SOUNDROW_", ""), table]:count()!=0 ){
-    local SoundRowTable = TABLE[clkName():replace("_SOUNDROW_", ""), table]
+if( LIB_DIALOG_INTERNAL_Table[clkName():replace("_SOUNDROW_", ""), table]:count()!=0 ){
+    local SoundRowTable = LIB_DIALOG_INTERNAL_Table[clkName():replace("_SOUNDROW_", ""), table]
     local TimerDelay = 1
     if( !SoundRowTable["IsPlaying", number] ){ exit() }
-    
+
     if( SoundRowTable["CurrentSound", number]>SoundRowTable["PATH", array]:count() ){
         if( SoundRowTable["Loop", number] ){
             SoundRowTable["CurrentSound", number] = 1
@@ -139,18 +140,18 @@ if( TABLE[clkName():replace("_SOUNDROW_", ""), table]:count()!=0 ){
         if( SoundRowTable["SoundOrigin", entity]:isValid() ){
             EmitEntity = SoundRowTable["SoundOrigin", entity]
         }
-        
+
         EmitEntity:emitSound(
             SoundRowTable["PATH", array][SoundRowTable["CurrentSound", number], string],
             SoundRowTable["SOUND_LEVEL", array][SoundRowTable["CurrentSound", number], number],
             SoundRowTable["PITCH", array][SoundRowTable["CurrentSound", number], number],
             SoundRowTable["VOLUME", array][SoundRowTable["CurrentSound", number], number]
         )
-        
+
         TimerDelay = SoundRowTable["DELAY", array][SoundRowTable["CurrentSound", number], number]
         SoundRowTable["CurrentSound", number] = SoundRowTable["CurrentSound", number]+1
     }
-    
+
     timer("_SOUNDROW_"+clkName(), TimerDelay)
 }
 
@@ -162,12 +163,12 @@ if( first() ){
         array(1200, 5000),
         0
     )
-    
+
     soundRowPlay("Test")
 }
 
 event removed(Resetting:number) {
-    foreach(V:string, _:table = TABLE){
+    foreach(V:string, _:table = LIB_DIALOG_INTERNAL_Table){
         soundRowStop(V)
     }
 }

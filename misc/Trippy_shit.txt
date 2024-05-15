@@ -1,23 +1,27 @@
 @name Trippy shit
-@inputs 
-@outputs 
 @persist ModelName:string HoloIndex HoloMaxAmount IsRainbow IsMoving GoingDown
 @persist [OriginalPos Color]:vector Ang:angle
-#@strict
 
 #[
     Chip made for being fun to watch.
+    Instructions:
+    - Spawn it.
+    - Let it load.
+    - Be hypnotized.
+    (I know code is bad(one of my first codes), but I'm just too lazy to fix it)
     
     ###################################
+    ##          Trippy shit          ##
     ##      made by deltamolfar      ##
     ##        Glory to Ukraine       ##
     ###################################
     
     This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
-    If you change anything in this code, don't expect me to help you.
+    If you want to change something, and help others, feel free to create an issue/PR.
 ]#
 
-if(first()){
+
+if( first() ){
     GoingDown = 0
     IsRainbow = 0
     IsMoving = 2
@@ -37,6 +41,7 @@ elseif(clk("Redo")){
     while(holoCanCreate()){
         Ang+=ang(0,(360/HoloMaxAmount),0)
         holoCreate(HoloIndex)
+        holoScale(HoloIndex, vec(1,1,5))
         holoModel(HoloIndex, ModelName)
         holoPos(HoloIndex, entity():pos())
         holoAng(HoloIndex, Ang)
@@ -74,3 +79,4 @@ elseif(clk("angfoo")){
     entity():setAng(entity():angles()+ang( randint(-15,15), randint(-15,15), randint(-15,15) ))
     timer("angfoo", 150)
 }
+

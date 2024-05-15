@@ -37,7 +37,7 @@
     ###################################
     
     This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
-    If you change anything in this code, don't expect me to help you.
+    If you want to change something, and help others, feel free to create an issue/PR.
 ]#
 
 if( first() || duped() ){

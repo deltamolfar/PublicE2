@@ -6,6 +6,8 @@
 
 #[
     Just a minecraft beacon that kills any NPC in radius :)
+    Instructions:
+    - Spawn it.
     
     ###################################
     ##        Anti-NPC Beacon        ##
@@ -14,7 +16,7 @@
     ###################################
     
     This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
-    If you change anything in this code, don't expect me to help you.
+    If you want to change something, and help others, feel free to create an issue/PR.
 ]#
 
 if( first() || duped() ){
@@ -102,7 +104,7 @@ if( first() || dupefinished() ){
         "GLOW_COLOR_DISABLED" = vec(65),
         "GLOW_SPEED" = 0.05,
         "SHOULD_DISABLE_ON_TILT" = 1,
-        "SHOULD_DISABLE_ON_OBSTACLE" = 1, 
+        "SHOULD_DISABLE_ON_OBSTACLE" = 0, 
         "PROTECTED_USE" = 1, # If non-zero -> Nobody will be able to turn the beacon on or off
         "BEAM_SPEED" = 2, # Speed of rotation of the beam
         "BEAM_WHITENESS" = 100, # How much "whiter" should the beam be relative to the core?

@@ -2,6 +2,22 @@
 @persist SETTINGS:table ArrayToRemove:array
 @strict
 
+#[
+    Just a fun unbalanced 'weapon'
+    Instructions:
+    - Spawn it.
+    - Press MMB. (Or change it on line 26)
+    
+    ###################################
+    ##           CarSpamLol          ##
+    ##      made by deltamolfar      ##
+    ##        Glory to Ukraine       ##
+    ###################################
+    
+    This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
+    If you want to change something, and help others, feel free to create an issue/PR.
+]#
+
 if( first() || dupefinished() ){
     propSpawnUndo(0)
     

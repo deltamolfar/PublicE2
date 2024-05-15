@@ -10,7 +10,7 @@
     ###################################
     
     This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
-    If you change anything in this code, don't expect me to help you.
+    If you want to change something, and help others, feel free to create an issue/PR.
 ]#
 
 if( first() || duped() ){
@@ -23,6 +23,7 @@ if( first() || duped() ){
     )
 }
 
+# Returns if the string is a number (it allow dots, so may be faulty sometimes ex. isDigit("123.")==1)
 function number isDigit(String:string){
     local StrLen = String:length()
     if( StrLen==0 ){ return 0 }
@@ -37,10 +38,12 @@ function number isDigit(String:string){
     return 1
 }
 
+# Alias of isDigit(s)
 function number string:isDigit(){
     return isDigit(This)
 }
 
+# Similar to isDigit(s) but doesn't permit dots (making it more fail-proof. Ex. isDigit("123.")==0)
 function number isInt(String:string){
     local StrLen = String:length()
     if( StrLen==0 ){ return 0 }
@@ -55,10 +58,12 @@ function number isInt(String:string){
     return 1
 }
 
+# Alias of isInt(s)
 function number string:isInt(){
     return isInt(This)
 }
 
+# Experimental. Translates a string to very big number. Made to be used with satelite dish/radio. Not very useful.
 function number toByteSentence(String:string){
     local NumberArr = array()
     local Number = 1
@@ -74,6 +79,7 @@ function number toByteSentence(String:string){
     return Number
 }
 
+# Experimental. Translates a very big number to string. Made to be used with satelite dish/radio. Not very useful.
 function string toCharSentence(Number:number){
     local String = ""
     local Number_Str = Number:toString()
@@ -90,9 +96,10 @@ function string toCharSentence(Number:number){
     return String
 }
 
+# Formats time as time string. Ex. formatAsTime(320) == "5:20"
 function string formatAsTime(Time:number){
     local Result = ""
-    if( Time==0 ){ return "N/A" }
+    if( Time<=0 ){ return "N/A" }
     
     #Minutes
     local Minutes = floor( Time/60 )
@@ -126,6 +133,7 @@ function string formatAsTime(Time:number){
     return Result
 }
 
+# Formats number as a bool. Ex. formatAsBool(1) == "true"
 function string formatAsBool(Statement:number){
     if( Statement<=0 ){
         return "false"
@@ -134,20 +142,56 @@ function string formatAsBool(Statement:number){
     }
 }
 
+# Beautifully formats a number. Ex. 1000000:formatNumber() == "1.000.000"
+function string number:formatNumber(){
+    This = floor(This)
+    local NumberStr = This:toString()
+    const Length = NumberStr:length()
+
+    if( Length<=3 ){ return NumberStr }
+
+    local Formatted = ""
+
+    for(I=1, Length){
+        if( I%3 == (Length+1)%3 & I!=1 ){
+            Formatted+="."
+        }
+        Formatted+=NumberStr[I]
+    }
+
+    return Formatted
+}
+
+# Translates common string boolean values to number representing boolean (1/0 - True/False).
+function number boolToNumber(Statement:string){
+    Statement = Statement:trim():lower()
+
+    if( Statement=="true" || Statement=="yes" || Statement=="y" || Statement=="1" || Statement=="ya" || Statement=="yay" ){
+        return 1
+    }
+
+    return 0
+}
+
+# Alias of boolToNumber(s)
+function number string:boolToNumber(){
+    return boolToNumber(This)
+}
+
+# Capitalizes first letter. Ex. "fff":capitalizeFirst() == "Fff"
 function string string:capitalizeFirst(){
     local TempString = This[1]
     
     return TempString+This:sub(2)
 }
 
+# Deletes all letters from string. Ex. "A1B2C3":deleteLetters() == "123"
 function string string:deleteLetters(){
     local New = ""
-    local ASCII = 0
-    local Char = ""
     
     for(I=1, This:length()){
-        Char = This[I]
-        ASCII = toByte(Char)
+        const Char = This[I]
+        const ASCII = toByte(Char)
         
         if( ASCII<65 || ASCII>122 ){
             New += Char
@@ -157,6 +201,7 @@ function string string:deleteLetters(){
     return New
 }
 
+# Forcefully translates a string to number (ignoring other characters in a way). Ex. "A1B2C3":toNumberForced() == 123
 function number string:toNumberForced(){
     This = This:trim()
     
@@ -176,6 +221,26 @@ function number string:toNumberForced(){
     return New:toNumber()
 }
 
+# Forcefully translates a string to number (ignoring other characters in a way+dots (making it more fail-proof)). Ex. "A1B2C3":toNumberForced() == 123
+function number string:toIntForced(){
+    This = This:trim()
+
+    local New = ""
+    local Char = ""
+
+    for(I=1, This:length()){
+        Char = This[I]
+        const ASCII = toByte(Char)
+
+        if( ASCII>=48 && ASCII<=57 ){
+            New += Char
+        }
+    }
+
+    return New:toNumber()
+}
+
+# Transforms a string to vector. Ex. "123,234,345":toVector() == vec(123,234,345)
 function vector string:toVector(){
     local NewArray = array()
 
@@ -223,10 +288,12 @@ function number array:printToConsole(){
     return 1
 }
 
+# Alias of r:printToConsole()
 function number printToConsole(Arr:array){
     return Arr:printToConsole()
 }
 
+# Will also notify when printout is finished.
 function number array:printToConsoleNotify(){
     local N = This:printToConsole()
     LIB_STRING_INTERNAL_PrintOutTable["NOTIFICATION", number] = 1
@@ -234,6 +301,7 @@ function number array:printToConsoleNotify(){
     return N
 }
 
+# Alias
 function number printToConsoleNotify(Arr:array){
     return Arr:printToConsoleNotify()
 }

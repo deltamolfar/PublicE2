@@ -1,25 +1,27 @@
-@name Zone Holo Generator v2 by deltamolfar
-@inputs OriginEnt:entity#Origin point, around which holo should be made. WARNING: ENTITY ITSELF WILL NOT BE MADE TO HOLO!
+@name Zone Holo Generator v2
 @persist [SETTINGS_Weapon SETTINGS_IncreaseZone SETTINGS_DecreaseSone SETTINGS_PrintToConsole]:string
-@persist [SelectedEntities]:table [HoloString]:array InitPrintIterator PrintIterator ZoneSize Busy CorrectWeapon #CONST_NumOfEnts
-#@strict
+@outputs [SelectedEntities]:table [HoloString]:array InitPrintIterator CONST_NumOfEnts PrintIterator ZoneSize Busy CorrectWeapon
+@strict
 
 #[
     Chip made to turn your set of props/contraption into almost ready holo-model!
-    Just take SETTINGS_Weapon into hands, set zone you like.
+    Just take SETTINGS_Weapon into your hands, set zone you like.
     Once all props that you want to capture are in the zone - press SETTINGS_PrintToConsole button.
     OriginEnt input is not mandatory. If you don't specify OriginEnt -> E2 itself would be used as origin point.
     
+    The resulting hologram code will be printed out to your console
+    
     ###################################
+    ##      Zone holo generator      ##
     ##      made by deltamolfar      ##
     ##        Glory to Ukraine       ##
     ###################################
     
     This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
-    If you change anything in this code, don't expect me to help you.
+    If you want to change something, and help others, feel free to create an issue/PR.
 ]#
 
-if( first() || dupefinished() ){
+if( first() || duped() ){
     SETTINGS_Weapon = "weapon_physgun"
     SETTINGS_IncreaseZone = "up"
     SETTINGS_DecreaseSone = "down"
@@ -35,6 +37,127 @@ if( first() || dupefinished() ){
     SelectedEntities = table()
     HoloString = array()
     SelectedEntities["ID_Reg", array] = array()
+}
+
+function printColorAI(Color:vector, Message:string){
+    printColor(vec(0,255,125), "[Holo Generator]: ", Color, Message)
+}
+
+function entity:select(){
+    if( SelectedEntities:exists(This:id()) ){ return }
+    
+    This["Cached_Color", vector] = This:getColor()
+    This["Cached_Alpha", number] = This:getAlpha()
+    
+    This:setColor(vec(60,180,60))
+    This:setAlpha(255)
+    
+    SelectedEntities[This:id(), entity] = This
+    SelectedEntities["ID_Reg", array]:pushNumber(This:id())
+}
+
+function entity:unselect(){
+    if( !SelectedEntities:exists(This:id()) ){ return }
+    
+    This:setColor( This["Cached_Color", vector] )
+    This:setAlpha( This["Cached_Alpha", number] )
+
+    SelectedEntities:removeEntity(This:id())
+    
+    foreach(I:number, V:number = SelectedEntities["ID_Reg", array]){
+        if( V==This:id() ){ SelectedEntities["ID_Reg", array]:removeNumber(I) break }
+    }
+}
+
+function array:unselect(){
+    foreach(_:number, V:entity = This){
+        if( V:isValid() ){
+            V:setColor( V["Cached_Color", vector] )
+            V:setAlpha( V["Cached_Alpha", number] )
+        }
+        
+        SelectedEntities:unset(V:id())
+        
+        foreach(I:number, F:number = SelectedEntities["ID_Reg", array]){
+            if( F==V:id() ){ SelectedEntities["ID_Reg", array]:removeNumber(I) break }
+        }
+    }
+}
+
+function table:unselectOutside(){
+    local TempEntArray = array()
+    foreach(Id:number, Ent:entity = SelectedEntities){
+        if( !This:exists(Id) ){ TempEntArray:pushEntity(Ent) }
+    }
+    
+    if( TempEntArray:count()>0 ){
+        TempEntArray:unselect()
+    }
+}
+
+function string getColor4(Entity:entity){
+    return "vec4("+Entity["Cached_Color", vector]:x()+","+Entity["Cached_Color", vector]:y()+","+Entity["Cached_Color", vector]:z()+", "+Entity["Cached_Alpha", number]+")"
+}
+
+function string getScale(Slave:entity){
+    assert( propCanCreate(), "Can't spawn" )
+    
+    local TempEnt = propSpawn( Slave:model(), 1 )
+    local S = Slave:boxSize() / TempEnt:boxSize()
+
+    local ScaleVector = "vec(1)"
+
+    if ( S != vec(1) ) {
+        local SclPresition = 100 #-- Scale precision
+        local ISclPresition = 1 / SclPresition 
+        local SX = round( S:x() * SclPresition ) * ISclPresition
+        local SY = round( S:y() * SclPresition ) * ISclPresition
+        local SZ = round( S:z() * SclPresition ) * ISclPresition
+        
+        ScaleVector = format( "vec(%s,%s,%s)", SX, SY, SZ )
+    }
+    
+    TempEnt:propDelete()
+    
+    return ScaleVector
+}
+
+function initPrintToConsole(Entity:entity){
+    if( !Entity:isValid() ){ return }
+    local Precision = 2 # -- How many digits after coma in pos/ang?
+    
+    HoloString:pushString( format( "holoCreate( %s , entity():toWorld( %s ), %s, entity():toWorld( %s ), %s, \"%s\" )", 
+    InitPrintIterator,
+    toString( floor( entity():toLocal( Entity:pos() ), Precision ) ):replace(" ", ", "),
+    getScale(Entity),
+    toString( floor( entity():toLocal( Entity:angles() ), Precision ) ):replace(" ", ", "),
+    getColor4(Entity),
+    Entity:model()
+    ) )
+        
+    local Material = Entity:getMaterial()
+    if( Material:length()>0 ){ HoloString:pushString( format( "    holoMaterial(%s, \"%s\")",InitPrintIterator, Material ) ) }
+    local Skin = Entity:getSkin()
+    if( Skin>0 ){ HoloString:pushString( format( "   holoSkin(%s, %s)",InitPrintIterator, Skin ) ) }
+}
+
+function printToConsole(String:string){
+    print(_HUD_PRINTCONSOLE, String)
+}
+
+function unselectAll(){
+    local TempArray = array()
+    foreach(_:number, V:number = SelectedEntities["ID_Reg", array]){
+        TempArray:pushEntity(entity(V))
+    }
+    
+    TempArray:unselect()
+}
+
+
+
+if( first() || dupefinished() ){
+    if( owner():weapon():type() == SETTINGS_Weapon ){ CorrectWeapon = 1 }
     
     holoCreate(1, entity():pos(), vec(ZoneSize), ang(0), vec4(0))
         holoMaterial(1, "models/wireframe")
@@ -42,126 +165,6 @@ if( first() || dupefinished() ){
     findIncludePlayerProps(owner())
     findExcludeEntities(players())
     findExcludeEntity(holoEntity(1))
-    
-    function printColorAI(Color:vector, Message:string){
-        printColor(vec(0,255,125), "[Holo Generator]: ", Color, Message)
-    }
-    
-    function entity:select(){
-        if( SelectedEntities:exists(This:id()) ){ return }
-        
-        This["Cached_Color", vector] = This:getColor()
-        This["Cached_Alpha", number] = This:getAlpha()
-        
-        This:setColor(vec(60,180,60))
-        This:setAlpha(255)
-        
-        SelectedEntities[This:id(), entity] = This
-        SelectedEntities["ID_Reg", array]:pushNumber(This:id())
-    }
-    
-    function entity:unselect(){
-        if( !SelectedEntities:exists(This:id()) ){ return }
-        
-        #print("DEBUG: Unselected "+This:model())
-        
-        This:setColor( This["Cached_Color", vector] )
-        This:setAlpha( This["Cached_Alpha", number] )
-
-        SelectedEntities:removeEntity(This:id())
-        
-        foreach(I, V:number = SelectedEntities["ID_Reg", array]){
-            if( V==This:id() ){ SelectedEntities["ID_Reg", array]:removeNumber(I) break }
-        }
-    }
-    
-    function array:unselect(){
-        foreach(_, V:entity = This){
-            if( V:isValid() ){
-                V:setColor( V["Cached_Color", vector] )
-                V:setAlpha( V["Cached_Alpha", number] )
-            }
-            
-            SelectedEntities:unset(V:id())
-            
-            foreach(I, F:number = SelectedEntities["ID_Reg", array]){
-                if( F==V:id() ){ SelectedEntities["ID_Reg", array]:removeNumber(I) break }
-            }
-        }
-    }
-    
-    function table:unselectOutside(){
-        local TempEntArray = array()
-        foreach(Id:number, Ent:entity = SelectedEntities){
-            if( !This:exists(Id) ){ TempEntArray:pushEntity(Ent) }
-        }
-        
-        if( TempEntArray:count()>0 ){
-            TempEntArray:unselect()
-        }
-    }
-    
-    function string getColor4(Entity:entity){
-        return "vec4("+Entity["Cached_Color", vector]:x()+","+Entity["Cached_Color", vector]:y()+","+Entity["Cached_Color", vector]:z()+", "+Entity["Cached_Alpha", number]+")"
-    }
-    
-    function string getScale(Slave:entity){
-        assert( propCanCreate(), "Can't spawn" )
-        
-        local TempEnt = propSpawn( Slave:model(), 1 )
-        local S = Slave:boxSize() / TempEnt:boxSize()
-    
-        local ScaleVector = "vec(1)"
-
-        if ( S != vec(1) ) {
-            local SclPresition = 100 #-- Scale precision
-            local ISclPresition = 1 / SclPresition 
-            local SX = round( S:x() * SclPresition ) * ISclPresition
-            local SY = round( S:y() * SclPresition ) * ISclPresition
-            local SZ = round( S:z() * SclPresition ) * ISclPresition
-            
-            ScaleVector = format( "vec(%s,%s,%s)", SX, SY, SZ )
-        }
-        
-        TempEnt:propDelete()
-        
-        return ScaleVector
-    }
-    
-    function initPrintToConsole(Entity:entity){
-        if( !Entity:isValid() ){ return }
-        local Precision = 2 # -- How many digits after coma in pos/ang?
-        local LocalOriginEnt = entity()
-        if( OriginEnt:isValid() ){ LocalOriginEnt = OriginEnt }
-        
-        HoloString:pushString( format( "holoCreate( %s , OriginEnt:toWorld( %s ), %s, OriginEnt:toWorld( %s ), %s, \"%s\" )", 
-        InitPrintIterator,
-        toString( floor( LocalOriginEnt:toLocal( Entity:pos() ), Precision ) ):replace(" ", ", "),
-        getScale(Entity),
-        toString( floor( LocalOriginEnt:toLocal( Entity:angles() ), Precision ) ):replace(" ", ", "),
-        getColor4(Entity),
-        Entity:model()
-        ) )
-            
-        local Material = Entity:getMaterial()
-        if( Material:length()>0 ){ HoloString:pushString( format( "    holoMaterial(%s, \"%s\")",InitPrintIterator, Material ) ) }
-        local Skin = Entity:getSkin()
-        if( Skin>0 ){ HoloString:pushString( format( "   holoSkin(%s, %s)",InitPrintIterator, Skin ) ) }
-    }
-    
-    function printToConsole(String:string){
-        print(_HUD_PRINTCONSOLE, String)
-    }
-    
-    function unselectAll(){
-        #SelectedEntities["ID_Reg", array]:unselect()
-        local TempArray = array()
-        foreach(_, V:number = SelectedEntities["ID_Reg", array]){
-            TempArray:pushEntity(entity(V))
-        }
-        
-        TempArray:unselect()
-    }
     
     interval(500)
 }
@@ -172,7 +175,7 @@ elseif( clk() ){
         if( findCanQuery() ){
             local TempTable = table()
             findInBox(holoEntity(1):aabbWorldMin()-(6*ZoneSize), holoEntity(1):aabbWorldMax()+(6*ZoneSize))
-            foreach(_, V:entity = findToArray()){
+            foreach(_:number, V:entity = findToArray()){
                 if( V:owner()!=owner() || V:isPlayer() ){ continue }
                 V:select()
                 TempTable[V:id(), entity] = V
@@ -211,6 +214,8 @@ elseif( clk("PrintDelay") ){
     }
 }
 
+
+
 event keyPressed(Player:entity, Key:string, Down:number, _:string) {
     if( Player!=owner() || !Down || !CorrectWeapon ){ exit() }
     
@@ -230,12 +235,11 @@ event keyPressed(Player:entity, Key:string, Down:number, _:string) {
             
             Busy = 1
             InitPrintIterator = 0
+            print(Count, SelectedEntities:count())
             printColorAI(vec(0,255,255), "Total entities: "+Count+"\n"+"ETA: "+floor((Count*550+Count*250)/1000)+"s\nSaving objects...")
             HoloString = array()
-            HoloString:pushString("#Holo model generated by \"Zone Holo Generator v2\" tool (by deltamolfar).")
-            HoloString:pushString("local OriginEnt = entity()# <- Change this to whatever origin you want")
             
-            #CONST_NumOfEnts = Count
+            CONST_NumOfEnts = Count
             timer("InitPrintDelay", 100)
         break
     }
