@@ -4,33 +4,36 @@
 #[
     GLua-like timers. Made to be as close as possible. (Original: https://wiki.facepunch.com/gmod/timer)
     More suitable for eyes documentation: https://github.com/deltamolfar/PublicE2/blob/main/lib/supertimers.txt
-
+    
     Basic usage instruction:
+    0) CRUCIAL: Place supertimer_process() in global scope (outside of any if block/function/event)
+        (It can be placed as the if( supertimer_process() ) tho, so it will return 1 if the current execution was
+        due to supertimer. You can use it for your logic as well.)
     1) Create a timer using 'supertimer_create(SNNF)'
         ( supertimer_create("HelloWorldTimer", 2000, 5, function(){print("Hello world")}) - Will print out 'hello world' 5 times every 2 seconds. )
     2) That's it :D
-
+    
     You can also:
     - Pause/Unpause (and toggle between this states) them,
     - Stop/Start them.
     - Modify them mid-delays (changing amount of repeats/their delay/their callback function).
     - Check if they're running.
     - Check how much time left until next execution.
-
+    
     - Affect with that functionality ALL supertimers at once.
-
+    
     - Get all running supertimers (basically getTimers() excluding regular timers).
     - Get all currently stopped but existing supertimers.
-
+    
     To see an example usage, scroll down to this file, uncomment if first block, and spawn this E2 by itself.
         (don't forget to comment/delete it before using to not have hello worlds :D)
-
+    
     ###################################
     ##          Supertimers          ##
     ##      made by deltamolfar      ##
     ##        Glory to Ukraine       ##
     ###################################
-
+    
     This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
     If you want to change something, and help others, feel free to create an issue/PR.
 ]#
@@ -46,10 +49,10 @@ if( first() || duped() ){
 
 #[--
     Checks if a timer exists. (Use supertimer_running(S) instead to check if the timer runs).
-
+    
     Parameters:
     - Name(string): The timer name.
-
+    
     Returns:
     - number: 1(true) if the timer exists. 0(false) otherwise.
 --]#
@@ -60,10 +63,10 @@ function number supertimer_exists(Name:string){
 
 #[--
     Checks if a timer currently running. (Use supertimer_exists(S) instead to check if the timer exists).
-
+    
     Parameters:
     - Name(string): The timer name.
-
+    
     Returns:
     - number: 1(true) if the timer currently running. 0(false) otherwise.
 --]#
@@ -74,33 +77,33 @@ function number supertimer_running(Name:string){
 
 #[--
     Returns amount of time left (in SECONDS) before the timer executes its function.
-
+    
     Parameters:
     - Name(string): The timer name.
-
+    
     Returns:
     - number: The amount of time left (in SECONDS).
         -1 if the timer doesnt exist.
 --]#
 function number supertimer_timeLeftS(Name:string){
     if( !supertimer_exists(Name) ){ return -1 }
-
+    
     const TimerTable = LIB_SUPERTIMER_INTERNAL_SuperTimers[LIB_SUPERTIMER_INTERNAL_NamePrefix+Name, table]
-
+    
     if( !supertimer_running(Name) ){
         return TimerTable["DelayLeft", number]/1000
     }
-
+    
     return TimerTable["LastExec", number]+TimerTable["Delay", number]/1000-curtime()
 }
 
 
 #[--
     Returns amount of time left (in MILISECONDS) before the timer executes its function.
-
+    
     Parameters:
     - Name(string): The timer name.
-
+    
     Returns:
     - number: The amount of time left (in MILISECONDS).
         -1 if the timer is paused. -2 if the timer doesnt exist
@@ -113,95 +116,95 @@ function number supertimer_timeLeft(Name:string){
 
 #[--
     Starts a timer. (Can be used instead of unpause, but will start the delay from start, not from the time left when it was paused).
-
+    
     Parameters:
     - Name(string): The timer name.
-
+    
     Returns:
     - number: 1(true) if the timer exists. 0(false) otherwise.
 --]#
 function number supertimer_start(Name:string){
     if( !supertimer_exists(Name) ){ return 0 }
-
+ 
     const TimerTable = LIB_SUPERTIMER_INTERNAL_SuperTimers[LIB_SUPERTIMER_INTERNAL_NamePrefix+Name, table]
-
+    
     timer(LIB_SUPERTIMER_INTERNAL_NamePrefix+Name, TimerTable["Delay", number])
-
+    
     TimerTable["DelayLeft", number] = TimerTable["Delay", number]
     TimerTable["LastExec", number] = curtime()
-
+    
     return 1
 }
 
 
 #[--
     Stops a timer. (Can be used instead of pause, but will start the delay from start, not from the time left when it was paused).
-
+    
     Parameters:
     - Name(string): The timer name.
-
+    
     Returns:
     - number: 1(true) if the timer exists. 0(false) otherwise.
 --]#
 function number supertimer_stop(Name:string){
     if( !supertimer_exists(Name) ){ return 0 }
-
+ 
     stoptimer(LIB_SUPERTIMER_INTERNAL_NamePrefix+Name)
-
+    
     return 1
 }
 
 
 #[--
     Pauses a timer. (Saving the delay until next execution, if started using supertimer_unpause(s))
-
+    
     Parameters:
     - Name(string): The timer name.
-
+    
     Returns:
     - number: 1(true) if the timer exists. 0(false) if doesnt exist, or already paused.
 --]#
 function number supertimer_pause(Name:string){
     if( !supertimer_exists(Name) ){ return 0 }
     if( !supertimer_running(Name) ){ return 0 }
-
+ 
     const TimerTable = LIB_SUPERTIMER_INTERNAL_SuperTimers[LIB_SUPERTIMER_INTERNAL_NamePrefix+Name, table]
-
+    
     TimerTable["DelayLeft", number] = supertimer_timeLeft(Name)
-
+    
     stoptimer(LIB_SUPERTIMER_INTERNAL_NamePrefix+Name)
-
+    
     return 1
 }
 
 
 #[--
     Unpauses a timer. (Using the delay until next execution saved during pause, instead of rewinding)
-
+    
     Parameters:
     - Name(string): The timer name.
-
+    
     Returns:
     - number: 1(true) if the timer exists. 0(false) if doesnt exist, or already unpaused.
 --]#
 function number supertimer_unpause(Name:string){
     if( !supertimer_exists(Name) ){ return 0 }
     if( supertimer_running(Name) ){ return 0 }
-
+ 
     const TimerTable = LIB_SUPERTIMER_INTERNAL_SuperTimers[LIB_SUPERTIMER_INTERNAL_NamePrefix+Name, table]
-
+    
     timer(LIB_SUPERTIMER_INTERNAL_NamePrefix+Name, TimerTable["DelayLeft", number])
-
+    
     return 1
 }
 
 
 #[
     Runs either supertimer_pause or supertimer_unpause based on the timer's current status.
-
+    
     Parameters:
     - Name(string): The timer name.
-
+    
     Returns:
     - number: 1(true) if unpaused, 0(false) othwerwise. (Will return -1, if the timer doesn't exist)
 ]#
@@ -216,7 +219,7 @@ function number supertimer_toggle(Name:string){
 
 #[--
     Creates (and starts) a supertimer. (It will override existing timer, if name is the same!)
-
+    
     Parameters:
     - Name(string): The timer name.
     - Delay:(number): The time, in MILISECONDS, to set the timer to.
@@ -225,7 +228,7 @@ function number supertimer_toggle(Name:string){
 --]#
 function supertimer_create(Name:string, Delay:number, Reps:number, Func:function){
     Reps = floor(Reps)
-
+    
     LIB_SUPERTIMER_INTERNAL_SuperTimers[LIB_SUPERTIMER_INTERNAL_NamePrefix+Name, table] = table(
         "Delay" = max(Delay, 1),
         "DelayLeft" = max(Delay, 1),
@@ -233,14 +236,14 @@ function supertimer_create(Name:string, Delay:number, Reps:number, Func:function
         "RepsLeft" = Reps==0 ? _INF : max(Reps, 1),
         "Func" = Func
     )
-
+    
     supertimer_start(Name)
 }
 
 
 #[--
     Creates (and starts) a one-time supertimer. (It will override existing timer, if name is the same!)
-
+    
     Parameters:
     - Name(string): The timer name.
     - Delay:(number): The time, in MILISECONDS, to set the timer to.
@@ -280,7 +283,7 @@ function supertimer_createS(Name:string, Delay:number, Func:function){
 
 #[--
     Creates (and starts) a supertimer. (It will override existing timer, if name is the same!)
-
+    
     Parameters:
     - Name(string): The timer name.
     - Delay:(number): The time, in MILISECONDS, to set the timer to.
@@ -308,29 +311,29 @@ function supertimer(Name:string, Delay:number, Func:function){
 
 #[--
     Destroys a timer.
-
+    
     Parameters:
     - Name(string): The timer name.
-
+    
     Returns:
     - number: 1 if success. 0 if the timer didn't exist.
 --]#
 function number supertimer_remove(Name:string){
     if( !supertimer_exists(Name) ){ return 0 }
-
+    
     stoptimer(LIB_SUPERTIMER_INTERNAL_NamePrefix+Name)
     LIB_SUPERTIMER_INTERNAL_SuperTimers:removeTable( LIB_SUPERTIMER_INTERNAL_NamePrefix+Name )
-
+    
     return 1
 }
 
 
 #[--
     Destroys a timer (alias of supertimer_remove(s)).
-
+    
     Parameters:
     - Name(string): The timer name.
-
+    
     Returns:
     - number: 1 if success. 0 if the timer didn't exist.
 --]#
@@ -341,106 +344,106 @@ function number supertimer_destroy(Name:string){
 
 #[--
     Sets a timer's delay between executions.
-
+    
     Parameters:
     - Name(string): The timer name.
     - Delay(number): The time, in SECONDS, to set the timer to.
-
+    
     Returns:
     - number: 1 if success. 0 if the timer didn't exist.
 --]#
 function number supertimer_setDelay(Name:string, Delay:number){
     if( !supertimer_exists(Name) ){ return 0 }
-
+    
     const TimerTable = LIB_SUPERTIMER_INTERNAL_SuperTimers[LIB_SUPERTIMER_INTERNAL_NamePrefix+Name, table]
-
+    
     TimerTable["Delay", number] = Delay
     TimerTable["DelayLeft", number] = Delay
     TimerTable["LastExec", number] = curtime()
-
+    
     return 1
 }
-
+    
 
 #[--
     Sets a timer's amount of repetitions.
-
+    
     Parameters:
     - Name(string): The timer name.
     - Reps:(number): The repetitions of the timer. 0 = Infinite.
-
+    
     Returns:
     - number: 1 if success. 0 if the timer didn't exist.
 --]#
 function number supertimer_setReps(Name:string, Reps:number){
     if( !supertimer_exists(Name) ){ return 0 }
-
+    
     LIB_SUPERTIMER_INTERNAL_SuperTimers[LIB_SUPERTIMER_INTERNAL_NamePrefix+Name, table]["Reps", number] = Reps==0 ? _INF : Reps
-
+    
     return 1
 }
 
 
 #[--
     Sets a timer's callback function.
-
+    
     Parameters:
     - Name(string): The timer name.
     - Func(function): New function.
-
+    
     Returns:
     - number: 1 if success. 0 if the timer didn't exist.
 --]#
 function number supertimer_setFunction(Name:string, Func:function){
     if( !supertimer_exists(Name) ){ return 0 }
-
+    
     LIB_SUPERTIMER_INTERNAL_SuperTimers[LIB_SUPERTIMER_INTERNAL_NamePrefix+Name, table]["Func", function] = Func
-
+    
     return 1
 }
 
 
 #[--
     Gets a timer's delay between executions.
-
+    
     Parameters:
     - Name(string): The timer name.
     - Delay(number): The time, in SECONDS, to set the timer to.
-
+    
     Returns:
     - number: delay (in MILISECONDS), or -1 if timer didn't exist.
 --]#
 function number supertimer_getDelay(Name:string){
     if( !supertimer_exists(Name) ){ return -1 }
-
+    
     return LIB_SUPERTIMER_INTERNAL_SuperTimers[LIB_SUPERTIMER_INTERNAL_NamePrefix+Name, table]["Delay", number]
 }
 
 
 #[--
     Gets a timer's amount of repeats left.
-
+    
     Parameters:
     - Name(string): The timer name.
     - Reps(number): The repetitions of the timer. 0 = Infinite.
-
+    
     Returns:
     - number: Amount of repeats left, or -1 if timer didn't exist.
 --]#
 function number supertimer_getReps(Name:string){
     if( !supertimer_exists(Name) ){ return -1 }
-
+    
     return LIB_SUPERTIMER_INTERNAL_SuperTimers[LIB_SUPERTIMER_INTERNAL_NamePrefix+Name, table]["Reps", number]
 }
 
 
 #[--
     Gets a timer's amount of repeats left (alias of supertimer_getReps(s)).
-
+    
     Parameters:
     - Name(string): The timer name.
     - Reps(number): The repetitions of the timer. 0 = Infinite.
-
+    
     Returns:
     - number: Amount of repeats left, or -1 if timer didn't exist.
 --]#
@@ -451,11 +454,11 @@ function number supertimer_repsLeft(Name:string){
 
 #[--
     Gets a timer's callback function.
-
+    
     Parameters:
     - Name(string): The timer name.
     - Func:function - New function.
-
+    
     Returns:
     - function: A current callback function
 --]#
@@ -466,152 +469,152 @@ function function supertimer_getFunction(Name:string){
 
 #[--
     Adjusts a timer. (You can adjust timers while they're running)
-
+    
     Parameters:
     - Name(number): The timer name.
     - Delay(number): New delay or 0 (will leave old delay). (If non-zero - will also reset the Delay left until execution!)
     - Reps(number): New number of repeats or 0 (for INF repeats) or -1 (for old amount of repeats) (Optional).
     - Func(function): New function (Optional).
-
+    
     Returns:
     - number: 1 if success. 0 if the timer didn't exist.
 --]#
 function number supertimer_adjust(Name:string, Delay:number, Reps:number, Func:function){
     if( !supertimer_exists(Name) ){ return 0 }
-
+    
     if( Delay>0 ){ supertimer_setDelay(Name, Delay) }
     if( Reps!=-1 ){ supertimer_setReps(Name, Reps) }
     supertimer_setFunction(Name, Func)
-
+    
     return 1
 }
 
 
 #[--
     Adjusts a timer. (You can adjust timers while they're running)
-
+    
     Parameters:
     - Name(string): The timer name.
     - Delay(number): New delay or 0 (will leave old delay and don't reset time left for execution).
     - Reps(number): New number of repeats or 0 (for INF repeats) or -1 (for old amount of repeats) (Optional).
-
+    
     Returns:
     - number: 1 if success. 0 if the timer didn't exist.
 --]#
 function number supertimer_adjust(Name:string, Delay:number, Reps:number){
     if( !supertimer_exists(Name) ){ return 0 }
-
+    
     if( Delay>0 ){ supertimer_setDelay(Name, Delay) }
     if( Reps!=-1 ){ supertimer_setReps(Name, Reps) }
-
+    
     return 1
 }
 
 
 #[--
     Stops ALL running/unpaused timers.
-
+    
     Returns:
     - number: Amount of timers affected.
 --]#
 function number supertimer_all_stop(){
     local AmountAffected = 0
     const RunningTimers = invert(getTimers())
-
+    
     foreach(Name:string, _:table = LIB_SUPERTIMER_INTERNAL_SuperTimers){
         if( RunningTimers:exists(Name) ){
             AmountAffected++
             supertimer_stop(Name:sub(13))
         }
     }
-
+    
     return AmountAffected
 }
 
 
 #[--
     Starts ALL stopped/paused timers.
-
+    
     Returns:
     - number: Amount of timers affected.
 --]#
 function number supertimer_all_start(){
     local AmountAffected = 0
     const RunningTimers = invert(getTimers())
-
+    
     foreach(Name:string, _:table = LIB_SUPERTIMER_INTERNAL_SuperTimers){
         if( !RunningTimers:exists(Name) ){
             AmountAffected++
             supertimer_start(Name:sub(13))
         }
     }
-
+    
     return AmountAffected
 }
 
 
 #[--
     Pauses ALL running/unpaused timers.
-
+    
     Returns:
     - number: Amount of timers affected.
 --]#
 function number supertimer_all_pause(){
     local AmountAffected = 0
     const RunningTimers = invert(getTimers())
-
+    
     foreach(Name:string, _:table = LIB_SUPERTIMER_INTERNAL_SuperTimers){
         if( RunningTimers:exists(Name) ){
             AmountAffected++
             supertimer_pause(Name:sub(13))
         }
     }
-
+    
     return AmountAffected
 }
 
 
 #[--
     Unpauses ALL stopped/paused timers.
-
+    
     Returns:
     - number: Amount of timers affected.
 --]#
 function number supertimer_all_unpause(){
     local AmountAffected = 0
     const RunningTimers = invert(getTimers())
-
+    
     foreach(Name:string, _:table = LIB_SUPERTIMER_INTERNAL_SuperTimers){
         if( !RunningTimers:exists(Name) ){
             AmountAffected++
             supertimer_unpause(Name:sub(13))
         }
     }
-
+    
     return AmountAffected
 }
 
 
 #[--
     Removes ALL timers.
-
+    
     Returns:
     - number: Amount of timers affected.
 --]#
 function number supertimer_all_remove(){
     local OldCount = LIB_SUPERTIMER_INTERNAL_SuperTimers:count()
-
+    
     foreach(Name:string, _:table = LIB_SUPERTIMER_INTERNAL_SuperTimers:clone()){
         supertimer_remove(Name:sub(13))
     }
-
+    
     return OldCount
 }
 
 
 #[--
     Deletes ALL timers. (Alias of supertimer_all_remove())
-
+    
     Returns:
     - number: Amount of timers affected.
 --]#
@@ -622,68 +625,122 @@ function number supertimer_all_destroy(){
 
 #[--
     Returns an array of all currently running/unpaused timers
-
+    
     Returns:
     - array: Array of currently running/unpaused supertimers.
 --]#
 function array supertimer_getRunningTimers(){
     local RunningSuperTimers = array()
-
+    
     foreach(_:number, Name:string = getTimers()){
         if( Name:sub(0, 13)==LIB_SUPERTIMER_INTERNAL_NamePrefix ){
             RunningSuperTimers:pushString(Name:sub(13))
         }
     }
-
+    
     return RunningSuperTimers
 }
 
 
 #[--
     Returns an array of all currently stopped/paused timers
-
+    
     Returns:
     - array: Array of currently stopped/paused supertimers.
 --]#
 function array supertimer_getStoppedTimers(){
     const RunningTimers = invert(getTimers())
     local StoppedSuperTimers = array()
-
+    
     foreach(Name:string, _:number = LIB_SUPERTIMER_INTERNAL_SuperTimers){
         if( !RunningTimers:exists( LIB_SUPERTIMER_INTERNAL_NamePrefix+Name ) ){
             StoppedSuperTimers:pushString(Name)
         }
     }
-
+    
     return StoppedSuperTimers
 }
 
 
-# Main element of this lib, yet simple.
-if( supertimer_exists( clkName():sub(13) ) ){
+#[--
+    Main elements of supertimer library. Have to be placed in global scope. (Not inside any event/if clk/function block!)
+    
+    Ex. correct usage:
+    if( first() || dupefinished() ){
+        ...
+        supertimer_create("test", 1000, function(){ print("HelloWorld" })
+    }
+    
+    supertimer_process() <- Will do the supertimer logic, if the current execution was caused by the supertimer.
+    
+    event removed(...){
+        ...
+    }
+    
+    Ex. INCORRECT usage:
+    if( first() || dupefinished() ){
+        ...
+        supertimer_create("test", 1000, function(){ print("HelloWorld" })
+        
+        interval(500)
+    } elseif( clk() ){
+        supertimer_process() <- Will NOT do the supertimer logic, because called inside a block, that is being executed
+            #only when the execution is being caused by interval() (LOGIC ERROR).
+    }
+    
+    event removed(...){
+        ...
+    }
+--]#
+function number supertimer_process(){
+    if( !supertimer_exists( clkName():sub(13)) ){ return 0 }
+    
     const TimerTable = LIB_SUPERTIMER_INTERNAL_SuperTimers[clkName(), table]
 
     TimerTable["Func", function]()
     TimerTable["RepsLeft", number] = TimerTable["RepsLeft", number]-1
-
+    
     if( TimerTable["RepsLeft", number]<=0 ){
         supertimer_remove(clkName():sub(13))
     } else{
         TimerTable["LastExec", number] = curtime()
-
+        
         timer(clkName(), TimerTable["Delay", number])
     }
+    
+    return 1
 }
 
+#[
+# Main element of this lib, yet simple. (For some reason it doesn't work while #included, so use supertimer_process() instead).
+if( supertimer_exists( clkName():sub(13) ) ){
+    const TimerTable = LIB_SUPERTIMER_INTERNAL_SuperTimers[clkName(), table]
+    print(TimerTable)
+    
+    TimerTable["Func", function]()
+    TimerTable["RepsLeft", number] = TimerTable["RepsLeft", number]-1
+    
+    if( TimerTable["RepsLeft", number]<=0 ){
+        supertimer_remove(clkName():sub(13))
+    } else{
+        TimerTable["LastExec", number] = curtime()
+        
+        timer(clkName(), TimerTable["Delay", number])
+    }
+}]#
 
-#[if( first() ){ #-- Uncomment that, if you want to see how it works.
+
+#[ #-- Uncomment that, if you want to see how it works.
+supertimer_process()
+
+if( first() ){
     supertimer("FOO", 1500, 1, function(){ print("Hello world") })# We set a foo timer at 1500 miliseconds delay.
-
+    
     supertimer("Pause_FOO", 1000, function(){# We pause it 1000 miliseconds in.
         # Control printout.
         # (I can't do nothing about timer executions times not being perfect to nano-seconds, so you will have few miliseconds margin errors)
         print("Paused", supertimer_pause("FOO"), "Time left: ", supertimer_timeLeft("FOO"))
-
+        
         #supertimer in super timer :D. We make it to unpause helloworld timer after 3000 ms AFTER we paused it.
         supertimer("Unpause_FOO", 3000, function(){
             print("Unpaused", supertimer_unpause("FOO"))
