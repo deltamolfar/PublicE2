@@ -217,17 +217,17 @@ function number supertimer_toggle(Name:string){
     }
 }
 
-
 #[--
-    Creates (and starts) a supertimer. (It will override existing timer, if name is the same!)
+    Creates supertimer. (It will override existing timer, if name is the same!)
     
     Parameters:
     - Name(string): The timer name.
-    - Delay:(number): The time, in MILISECONDS, to set the timer to.
-    - Reps:(number): The repetitions of the timer. 0 = Infinite.
-    - Func:(function): The function to call when the timer is fired.
+    - Delay(number): The time, in MILISECONDS, to set the timer to.
+    - Reps(number): The repetitions of the timer. 0 = Infinite.
+    - Func(function): The function to call when the timer is fired.
+    - State(number): Should the timer run once created?
 --]#
-function supertimer_create(Name:string, Delay:number, Reps:number, Func:function){
+function supertimer_create(Name:string, Delay:number, Reps:number, Func:function, State:number){
     Reps = floor(Reps)
     
     LIB_SUPERTIMER_INTERNAL_SuperTimers[LIB_SUPERTIMER_INTERNAL_NamePrefix+Name, table] = table(
@@ -238,76 +238,31 @@ function supertimer_create(Name:string, Delay:number, Reps:number, Func:function
         "Func" = Func
     )
     
-    supertimer_start(Name)
+    if( State>=1 ){
+        supertimer_start(Name)
+    }
 }
 
-
-#[--
-    Creates (and starts) a one-time supertimer. (It will override existing timer, if name is the same!)
-    
-    Parameters:
-    - Name(string): The timer name.
-    - Delay:(number): The time, in MILISECONDS, to set the timer to.
-    - Func:(function): The function to call when the timer is fired.
---]#
-function supertimer_create(Name:string, Delay:number, Func:function){
-    supertimer_create(Name, Delay, 1, Func)
-}
-
-
-#[--
-    Same as supertimer_create(snnf), but uses SECONDS instead of miliseconds.
-
-    Parameters:
-    - Name(string): The timer name.
-    - Delay:(number): The time, in MILISECONDS, to set the timer to.
-    - Reps:(number): The repetitions of the timer. 0 = Infinite.
-    - Func:(function): The function to call when the timer is fired.
---]#
-function supertimer_createS(Name:string, Delay:number, Reps:number, Func:function){
-    supertimer_create(Name, Delay*1000, Reps, Func)
-}
-
-
-#[--
-    Same as supertimer_create(snf), but uses SECONDS instead of miliseconds.
-
-    Parameters:
-    - Name(string): The timer name.
-    - Delay:(number): The time, in MILISECONDS, to set the timer to.
-    - Func:(function): The function to call when the timer is fired.
---]#
-function supertimer_createS(Name:string, Delay:number, Func:function){
-    supertimer_create(Name, Delay*1000, 1, Func)
-}
-
-
-#[--
-    Creates (and starts) a supertimer. (It will override existing timer, if name is the same!)
-    
-    Parameters:
-    - Name(string): The timer name.
-    - Delay:(number): The time, in MILISECONDS, to set the timer to.
-    - Reps:(number): The repetitions of the timer. 0 = Infinite.
-    - Func:(function): The function to call when the timer is fired.
---]#
-function supertimer(Name:string, Delay:number, Reps:number, Func:function){
-    supertimer_create(Name, Delay, Reps, Func)
-}
-
-
-#[
-    Creates (and starts) a one-time supertimer. (It will override existing timer, if name is the same!)
-
-    Parameters:
-    - Name(string): The timer name.
-    - Delay:(number): The time, in MILISECONDS, to set the timer to.
-    - Reps:(number): The repetitions of the timer. 0 = Infinite.
-    - Func:(function): The function to call when the timer is fired.
---]#
-function supertimer(Name:string, Delay:number, Func:function){
-    supertimer_create(Name, Delay, 1, Func)
-}
+# Different aliases.
+# If it have S in the end - it uses seconds, instead of miliseconds.
+# If the number in the end given - it will use the given number's state, 1 by default (auto-start a timer)
+function supertimer_create(Name:string, Delay:number, Reps:number, Func:function){ supertimer_create(Name, Delay, Reps, Func, 1) }
+function supertimer_create(Name:string, Delay:number, Func:function){ supertimer_create(Name, Delay, 1, Func, 1) }
+function supertimer_create(Name:string, Delay:number, Func:function, State:number){ supertimer_create(Name, Delay, 1, Func, State) }
+function supertimer_createS(Name:string, Delay:number, Reps:number, Func:function, State:number){ supertimer_create(Name, Delay*1000, Reps, Func, State) }
+function supertimer_createS(Name:string, Delay:number, Reps:number, Func:function){ supertimer_create(Name, Delay*1000, Reps, Func, 1) }
+function supertimer_createS(Name:string, Delay:number, Func:function){ supertimer_create(Name, Delay*1000, 1, Func, 1) }
+function supertimer(Name:string, Delay:number, Reps:number, Func:function, State:number){ supertimer_create(Name, Delay, Reps, Func, State) }
+function supertimer(Name:string, Delay:number, Reps:number, Func:function){ supertimer_create(Name, Delay, Reps, Func, 1) }
+function supertimer(Name:string, Delay:number, Func:function){ supertimer_create(Name, Delay, 1, Func, 1) }
+function supertimer(Name:string, Delay:number, Func:function, State:number){ supertimer_create(Name, Delay, 1, Func, State) }
+function supertimerS(Name:string, Delay:number, Reps:number, Func:function, State:number){ supertimer_create(Name, Delay*1000, Reps, Func, State) }
+function supertimerS(Name:string, Delay:number, Reps:number, Func:function){ supertimer_create(Name, Delay*1000, Reps, Func, 1) }
+function supertimerS(Name:string, Delay:number, Func:function){ supertimer_create(Name, Delay*1000, 1, Func, 1) }
+function supertimer_simple(Name:string, Delay:number, Func:function, State:number){ supertimer_create(Name, Delay, 1, Func, State) }
+function supertimer_simple(Name:string, Delay:number, Func:function){ supertimer_create(Name, Delay, 1, Func, 1) }
+function supertimer_simpleS(Name:string, Delay:number, Func:function, State:number){ supertimer_create(Name, Delay*1000, 1, Func, State) }
+function supertimer_simpleS(Name:string, Delay:number, Func:function){ supertimer_create(Name, Delay*1000, 1, Func, 1) }
 
 
 #[--
@@ -327,21 +282,8 @@ function number supertimer_remove(Name:string){
     
     return 1
 }
-
-
-#[--
-    Destroys a timer (alias of supertimer_remove(s)).
-    
-    Parameters:
-    - Name(string): The timer name.
-    
-    Returns:
-    - number: 1 if success. 0 if the timer didn't exist.
---]#
-function number supertimer_destroy(Name:string){
-    return supertimer_remove(Name)
-}
-
+# Alias
+function number supertimer_destroy(Name:string){ return supertimer_remove(Name) }
 
 #[--
     Sets a timer's delay between executions.
@@ -364,14 +306,13 @@ function number supertimer_setDelay(Name:string, Delay:number){
     
     return 1
 }
-    
 
 #[--
     Sets a timer's amount of repetitions.
     
     Parameters:
     - Name(string): The timer name.
-    - Reps:(number): The repetitions of the timer. 0 = Infinite.
+    - Reps(number): The repetitions of the timer. 0 = Infinite.
     
     Returns:
     - number: 1 if success. 0 if the timer didn't exist.
@@ -383,7 +324,6 @@ function number supertimer_setReps(Name:string, Reps:number){
     
     return 1
 }
-
 
 #[--
     Sets a timer's callback function.
@@ -403,7 +343,6 @@ function number supertimer_setFunction(Name:string, Func:function){
     return 1
 }
 
-
 #[--
     Gets a timer's delay between executions.
     
@@ -420,7 +359,6 @@ function number supertimer_getDelay(Name:string){
     return LIB_SUPERTIMER_INTERNAL_SuperTimers[LIB_SUPERTIMER_INTERNAL_NamePrefix+Name, table]["Delay", number]
 }
 
-
 #[--
     Gets a timer's amount of repeats left.
     
@@ -436,29 +374,15 @@ function number supertimer_getReps(Name:string){
     
     return LIB_SUPERTIMER_INTERNAL_SuperTimers[LIB_SUPERTIMER_INTERNAL_NamePrefix+Name, table]["Reps", number]
 }
-
-
-#[--
-    Gets a timer's amount of repeats left (alias of supertimer_getReps(s)).
-    
-    Parameters:
-    - Name(string): The timer name.
-    - Reps(number): The repetitions of the timer. 0 = Infinite.
-    
-    Returns:
-    - number: Amount of repeats left, or -1 if timer didn't exist.
---]#
-function number supertimer_repsLeft(Name:string){
-    return supertimer_getReps(Name)
-}
-
+# Alias
+function number supertimer_repsLeft(Name:string){ return supertimer_getReps(Name) }
 
 #[--
     Gets a timer's callback function.
     
     Parameters:
     - Name(string): The timer name.
-    - Func:function - New function.
+    - Func(function): New function.
     
     Returns:
     - function: A current callback function
@@ -466,7 +390,6 @@ function number supertimer_repsLeft(Name:string){
 function function supertimer_getFunction(Name:string){
     return LIB_SUPERTIMER_INTERNAL_SuperTimers[LIB_SUPERTIMER_INTERNAL_NamePrefix+Name, table]["Func", function]
 }
-
 
 #[--
     Adjusts a timer. (You can adjust timers while they're running)
@@ -490,7 +413,6 @@ function number supertimer_adjust(Name:string, Delay:number, Reps:number, Func:f
     return 1
 }
 
-
 #[--
     Adjusts a timer. (You can adjust timers while they're running)
     
@@ -510,7 +432,6 @@ function number supertimer_adjust(Name:string, Delay:number, Reps:number){
     
     return 1
 }
-
 
 #[--
     Stops ALL running/unpaused timers.
@@ -532,7 +453,6 @@ function number supertimer_all_stop(){
     return AmountAffected
 }
 
-
 #[--
     Starts ALL stopped/paused timers.
     
@@ -552,7 +472,6 @@ function number supertimer_all_start(){
     
     return AmountAffected
 }
-
 
 #[--
     Pauses ALL running/unpaused timers.
@@ -574,7 +493,6 @@ function number supertimer_all_pause(){
     return AmountAffected
 }
 
-
 #[--
     Unpauses ALL stopped/paused timers.
     
@@ -595,7 +513,6 @@ function number supertimer_all_unpause(){
     return AmountAffected
 }
 
-
 #[--
     Removes ALL timers.
     
@@ -611,18 +528,8 @@ function number supertimer_all_remove(){
     
     return OldCount
 }
-
-
-#[--
-    Deletes ALL timers. (Alias of supertimer_all_remove())
-    
-    Returns:
-    - number: Amount of timers affected.
---]#
-function number supertimer_all_destroy(){
-    return supertimer_all_remove()
-}
-
+# Alias
+function number supertimer_all_destroy(){ return supertimer_all_remove() }
 
 #[--
     Returns an array of all currently running/unpaused timers
@@ -642,7 +549,6 @@ function array supertimer_getRunningTimers(){
     return RunningSuperTimers
 }
 
-
 #[--
     Returns an array of all currently stopped/paused timers
     
@@ -661,7 +567,6 @@ function array supertimer_getStoppedTimers(){
     
     return StoppedSuperTimers
 }
-
 
 #[--
     Main elements of supertimer library. Have to be placed in global scope. (Not inside any event/if clk/function block!)
@@ -713,6 +618,7 @@ function number supertimer_process(){
 }
 
 
+
 # Main element of this lib, yet simple. (IT WILL NOT WORK IF #include is inside any if first() block/function/etc,
 #   so place supertimer_process() on global scope yourself!
 supertimer_process()
@@ -733,4 +639,3 @@ if( first() ){
         })
     })
 }]#
-
