@@ -6,13 +6,13 @@
     More suitable for eyes documentation: https://github.com/deltamolfar/PublicE2/blob/main/lib/supertimers.txt
     
     Basic usage instruction:
-    0) CRUCIAL: Either put #include in global scope (outside of any if block/function/event), or, if you place it inside
-        if(first()) (or anywhere else) - Place supertimer_process() in global scope (outside of any if block/function/event)
-            (It can be placed as the if( supertimer_process() ) tho, so it will return 1 if the current execution was
-            due to supertimer. You can use it for your logic as well.)
-    1) Create a timer using 'supertimer_create(SNNF)'
-        ( supertimer_create("HelloWorldTimer", 2000, 5, function(){print("Hello world")}) - Will print out 'hello world' 5 times every 2 seconds. )
-    2) That's it :D
+        0) CRUCIAL: Either put #include in global scope (outside of any if block/function/event), or, if you place it inside
+            if(first()) (or anywhere else) - Place supertimer_process() in global scope (outside of any if block/function/event)
+                (It can be placed as the if( supertimer_process() ) tho, so it will return 1 if the current execution was
+                due to supertimer. You can use it for your logic as well.)
+        1) Create a timer using 'supertimer_create(SNNF)'
+            ( supertimer_create("HelloWorldTimer", 2000, 5, function(){print("Hello world")}) - Will print out 'hello world' 5 times every 2 seconds. )
+        2) That's it :D
     
     You can also:
     - Pause/Unpause (and toggle between this states) them,
@@ -733,5 +733,4 @@ if( first() ){
         })
     })
 }]#
-
 

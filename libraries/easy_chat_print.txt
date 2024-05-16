@@ -1,0 +1,285 @@
+@persist LIB_EASYCHATPRINT_INTERNAL_Attributes:table
+
+#[
+    Very simple lib that lets you make more consistent colored printout.
+    
+    Instructions:
+        0) #include it in your E2 (no matter the scope, although it's a good practice to put #includes at the top scope).
+        0a) In your if(first()) block - you may change the name using ecp_setName(s).
+        0b) In your if(first()) block - you may change text color presets/default color using ecp_setPresetColor(sv) and ecp_setDefaultColor(v)
+        1) Print to owner using evp_print(Color:vector, Text:string) or ecp_print(Presetname:string, Text:string).
+        1a) Print to driver using Vehicle:evp_printDriver(Color:vector, Text:string) or ecp_printDriver(Presetname:string, Text:string)
+        
+        P.S. You can also get a table of current presets using ecp_getAllPresetColors()
+        
+    ###################################
+    ##         EasyChatPrint         ##
+    ##      made by deltamolfar      ##
+    ##        Glory to Ukraine       ##
+    ###################################
+    
+    This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
+    If you want to change something, and help others, feel free to create an issue/PR.
+]#
+
+
+if( first() || duped() ){
+    LIB_EASYCHATPRINT_INTERNAL_Attributes = table(
+        "NAME" = entity():getName(),
+        
+        "COLOR_NAME" = vec(255,255,0),
+        "COLOR_DEFAULT" = vec(255),
+        "COLOR_PRESETS" = table(
+            "red" = vec(255,0,0),
+            "orange" = vec(255,128,0),
+            "yellow" = vec(255,255,0),
+            "white" = vec(255),
+            "cyan" = vec(0,255,255),
+            "green" = vec(0,255,0),
+            "blue" = vec(0,0,255),
+            "light-blue" = vec(0,255,255),
+            "purple" = vec(128,0,255),
+            "magenta" = vec(255,0,255),
+            "black" = vec(0),
+            "grey" = vec(50),
+            "gray" = vec(50),
+            "light-grey" = vec(110),
+            "light-gray" = vec(110),
+            
+            "success" = vec(75,255,75),
+            "warning" = vec(255,255,75),
+            "error" = vec(255,75,75)
+        )
+    )
+}
+
+
+
+#[--
+    Returns default color.
+    
+    Returns:
+    - vector: Default color to use.
+--]#
+function vector ecp_getDefaultColor(){
+    return LIB_EASYCHATPRINT_INTERNAL_Attributes["COLOR_DEFAULT", vector]
+}
+
+#[--
+    Sets default color.
+    
+    Parameters:
+    - Color(vector): New default color to be used, if non were passed to ecp_print().
+    
+    Returns:
+    - vector: Returns new default color.
+--]#
+function vector ecp_setDefaultColor(Color:vector){
+    Color = clamp(Color, vec(0), vec(255))
+    LIB_EASYCHATPRINT_INTERNAL_Attributes["COLOR_DEFAULT", vector] = Color
+    
+    return Color
+}
+
+#[--
+    Sets new name. (By default - name of your E2 is used)
+    
+    Parameters:
+    - NewName(string): New name to be used in prints.
+    
+    Returns:
+    - number: Returns 1 if name was changed successfuly, 0 otherwise.
+    
+    Usage:
+    ecp_print("Foo1") #-- In chat: "[Test E2]: Foo1"
+    ecp_setName("BOO")
+    ecp_print("Foo2") #-- In chat: "[BOO]: Foo1"
+--]#
+function number ecp_setName(NewName:string){
+    if( NewName:length()<=0 ){ return 0 }
+    
+    LIB_EASYCHATPRINT_INTERNAL_Attributes["NAME", string] = NewName
+    
+    return 1
+}
+
+#[--
+    Returns current name.
+    
+    Returns:
+    - string: Current name to be used in prints.
+--]#
+function string ecp_getName(){
+    return LIB_EASYCHATPRINT_INTERNAL_Attributes["NAME", string]
+}
+
+#[--
+    Sets new name color. (By default - yellow)
+    
+    Parameters:
+    - Color(vector): New name color to be used in prints.
+    
+    Returns:
+    - vector: Returns new color set.
+--]#
+function vector ecp_setNameColor(Color:vector){
+    Color = clamp(Color, vec(0), vec(255))
+    
+    LIB_EASYCHATPRINT_INTERNAL_Attributes["COLOR_NAME", vector] = Color
+    
+    return Color
+}
+
+#[--
+    Returns current name color.
+    
+    Returns:
+    - vector: Current name color to be used in prints.
+--]#
+function vector ecp_getNameColor(){
+    return LIB_EASYCHATPRINT_INTERNAL_Attributes["COLOR_NAME", vector]
+}
+
+#[--
+    Returns current name + formats it ("[<name>}: ")
+    
+    Returns:
+    - string: Current formatted name.
+--]#
+function string ecp_getFormattedName(){
+    return "["+LIB_EASYCHATPRINT_INTERNAL_Attributes["NAME", string]+"]: "
+}
+
+#[--
+    Returns print array. Used internally, but you can use it for whatever reason you want.
+    
+    Returns:
+    - array: Ready-to-use-in-print array.
+--]#
+function array ecp_getPrintArray(Color:vector, Text:string){
+    return array(
+        LIB_EASYCHATPRINT_INTERNAL_Attributes["COLOR_NAME", vector],
+        ecp_getFormattedName(),
+        Color,
+        Text
+    )
+}
+
+#[--
+    Returns presets table. Just for ease of exploring.
+    
+    Returns:
+    - table: All presets in a form <NameOfPreset> - <Corresponding RGB color>.
+--]#
+function table ecp_getAllPresetColors(){
+    return LIB_EASYCHATPRINT_INTERNAL_Attributes["COLOR_PRESETS", table] 
+}
+
+#[--
+    Returns presets color given the preset name.
+    
+    Parameters:
+    - Name(string): Name of the preset.
+    
+    Returns:
+    - vector: Color bound to this preset, or vec(255)(white) if it doesn't exist.
+--]#
+function vector ecp_getPresetColor(Name:string){
+    Name = Name:lower():trim()
+
+    return LIB_EASYCHATPRINT_INTERNAL_Attributes["COLOR_PRESETS", table]:exists(Name) ? LIB_EASYCHATPRINT_INTERNAL_Attributes["COLOR_PRESETS", table][Name, vector] : vec(255)
+}
+
+#[--
+    Sets new/overwrite existing preset.
+    
+    Parameters:
+    - Name(string): Name of the preset.
+    - NewColor(vector): New color to be saved as Name.
+--]#
+function ecp_setPresetColor(Name:string, NewColor:vector){
+    Name = Name:lower():trim()
+    NewColor = clamp(NewColor, vec(0), vec(255))
+    
+    LIB_EASYCHATPRINT_INTERNAL_Attributes["COLOR_PRESETS", table][Name, vector] = NewColor
+}
+
+#[--
+    Print new colored text in a form of <NameColor> <Formatted name> <color/preset/default color> <Text>
+    to the owner.
+    
+    Parameters:
+    - Color(vector): Text color.
+    - Text(string): Text to be colored.
+--]#
+function ecp_print(Color:vector, Text:string){
+    printColor(ecp_getPrintArray(Color, Text))
+}
+
+#[--
+    Alias of ecp_print(vs), but uses preset instead.
+--]#
+function ecp_print(ColorPreset:string, Text:string){
+    ColorPreset = ColorPreset:lower():trim()
+    
+    printColor(
+        ecp_getPrintArray(
+            ecp_getPresetColor(ColorPreset),
+            Text
+        )
+    )
+}
+
+#[--
+    Print new colored text in a form of <NameColor> <Formatted name> <color/preset/default color> <Text>
+    to the driver of passed entity.
+    
+    Parameters:
+    - Color(vector): Text color.
+    - Text(string): Text to be colored.
+--]#
+function entity:ecp_print(Color:vector, Text:string){
+    This:printColorDriver(ecp_getPrintArray(Color, Text))
+}
+
+#[--
+    Alias of e:ecp_print(vs), but uses preset instead.
+--]#
+function entity:ecp_print(ColorPreset:string, Text:string){
+    ColorPreset = ColorPreset:lower():trim()
+    
+    This:printColorDriver(
+        ecp_getPrintArray(
+            ecp_getPresetColor(ColorPreset),
+            Text
+        )
+    )
+}
+
+#[--
+    Alias of e:ecp_print(vs).
+--]#
+function entity:ecp_printDriver(Color:vector, Text:string){
+    This:ecp_print(Color, Text)
+}
+
+#[--
+    Alias of e:ecp_printDriver(vs), but uses preset instead.
+--]#
+function entity:ecp_printDriver(ColorPreset:string, Text:string){
+    This:ecp_print(ColorPreset, Text)
+}
+
+#[--
+    Alias of e:ecp_print(vs).
+--]#
+function ecp_printDriver(Vehicle:entity, Color:vector, Text:string){
+    Vehicle:ecp_print(Color, Text)
+}
+
+#[--
+    Alias of e:ecp_printDriver(vs), but uses preset instead.
+--]#
+function ecp_printDriver(Vehicle:entity, ColorPreset:string, Text:string){
+    Vehicle:ecp_print(ColorPreset, Text)
+}

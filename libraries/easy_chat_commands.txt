@@ -1,0 +1,151 @@
+@persist LIB_EASYCHATCOMMANDS_INTERNAL_Commands:table
+@persist LIB_EASYCHATCOMMANDS_INTERNAL_PREFIX:string
+@persist LIB_EASYCHATCOMMANDS_INTERNAL_IncorrectCommandCallback:function
+
+#[
+    Very simple lib that lets you make chat commands.
+    
+    Instruction:
+        0) Put #include "<path/to/this/file>easy_chat_commands" AT THE TOP SCOPE! (Not inside any if/function/event!)
+        1) Register an internal prefix (uses "!" by default, but remember, it's a first word, not a prefix to the command!)
+        2) Register new commands using ecc_newCommand(ssfrn).
+            TO THE COMMAND FUNCTION PLAYER:entity AND ARGS:array WILL ALWAYS BE PASSED!
+            (You can also pass world() as an entity, or empty array() to make the command listen to everyone.)
+            
+            2a) ecc_newCommand("HelloWorld", "printHelloWorld", function(Player:entity, Args:array){print("Hello World"}, owner(), 1)
+                Will result in:
+                - New function that is called "HelloWorld" internall (id by which you cam modify it later.
+                - That reacts to "! printHelloWorld" ('!' is used by default, you can change it using ecc_setPrefix(s)).
+                - That executes a function, to which ALWAYS player, which caused it, and array of arguments is passed.
+                - That will only listen to the owner() (will ignore other players).
+                - That is active (will execute if called). (You can turn your commands off/on, without losing them using ecc_disable(s) and ecc_enable(s) accordingly).
+            3 (optional)) Set the fallback function, which be called if the doesn't exist.
+                TO THE FALLBACK FUNCTION PLAYER:entity AND UNRECOGNIZED COMMAND:string WILL ALWAYS BE PASSED!
+        
+    ###################################
+    ##        EasyChatCommands       ##
+    ##      made by deltamolfar      ##
+    ##        Glory to Ukraine       ##
+    ###################################
+    
+    This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
+    If you want to change something, and help others, feel free to create an issue/PR.
+]#
+
+if( first() || duped() ){
+    LIB_EASYCHATCOMMANDS_INTERNAL_Commands = table()
+    LIB_EASYCHATCOMMANDS_INTERNAL_PREFIX = "!"
+}
+
+
+
+function string ecc_getPrefix(){
+    return LIB_EASYCHATCOMMANDS_INTERNAL_PREFIX
+}
+
+function ecc_setPrefix(NewPrefix:string){
+    assert(NewPrefix:length()>0, "ecc_setPrefix(): Prefix can not be empty!")
+    
+    LIB_EASYCHATCOMMANDS_INTERNAL_PREFIX = NewPrefix
+}
+
+function ecc_setUnknownCommandCallback(Func:function){
+    LIB_EASYCHATCOMMANDS_INTERNAL_IncorrectCommandCallback = Func
+}
+
+function number ecc_newCommand(Command:string, Func:function, ListenTo:array, State:number){
+    State = clamp(floor(State), 0, 1)
+    
+    LIB_EASYCHATCOMMANDS_INTERNAL_Commands[Command, table] = table(
+        "FUNC" = Func,
+        "ACTIVE" = State,
+        "WHITELIST" = ListenTo
+    )
+    
+    return State
+}
+
+function number ecc_newCommand(Command:string, Func:function, OnlyListenTo:entity, State:number){
+    return ecc_newCommand(Command, Func, OnlyListenTo==world() ? array() : array(OnlyListenTo), State)
+}
+
+function number ecc_newCommand(Command:string, Func:function, OnlyListenTo:entity){
+    return ecc_newCommand(Command, Func, OnlyListenTo==world() ? array() : array(OnlyListenTo), 1)
+}
+
+function number ecc_newCommand(Command:string, Func:function){
+    return ecc_newCommand(Command, Func, owner(), 1)
+}
+
+function number ecc_commandExist(Command:string){
+    return LIB_EASYCHATCOMMANDS_INTERNAL_Commands:exists(Command)
+}
+
+function number ecc_getStatus(Command:string){
+    if( !ecc_commandExist(Command) ){ return -1 }
+    
+    return LIB_EASYCHATCOMMANDS_INTERNAL_Commands[Command, table]["ACTIVE", number]
+}
+
+function number ecc_setStatus(Command:string, NewState:number){
+    if( !ecc_commandExist(Command) ){ return -1 }
+    
+    NewState = clamp(floor(NewState), 0, 1)
+    LIB_EASYCHATCOMMANDS_INTERNAL_Commands[Command, table]["ACTIVE", number] = NewState
+    return NewState
+}
+
+function number ecc_disable(Command:string){
+    if( !ecc_commandExist(Command) ){ return -1 }
+    
+    ecc_setStatus(Command, 0)
+    
+    return 0
+}
+
+function number ecc_enable(Command:string){
+    if( !ecc_commandExist(Command) ){ return -1 }
+    
+    ecc_setStatus(Command, 1)
+    
+    return 1
+}
+
+function number ecc_toggle(Command:string){
+    if( !ecc_commandExist(Command) ){ return -1 }
+    
+    const NewState = !ecc_getStatus(Command)
+    ecc_setStatus(Command, NewState)
+    
+    return NewState
+}
+
+function number ecc_process(Player:entity, Message:string){
+    const MsgArr = Message:trim():explode(" ")
+
+    if( MsgArr[1, string]!=LIB_EASYCHATCOMMANDS_INTERNAL_PREFIX ){ exit() }
+    
+    const Command = MsgArr[2, string]
+    const CmdTable = LIB_EASYCHATCOMMANDS_INTERNAL_Commands[Command, table]
+    
+    if( CmdTable:count()<=0 || !CmdTable["ACTIVE", number] ){
+        LIB_EASYCHATCOMMANDS_INTERNAL_IncorrectCommandCallback(Player, Command)
+    } elseif( CmdTable["WHITELIST", array]:count()==0 || CmdTable["WHITELIST", array]:indexOf(Player)!=0 ){
+        local Args = array()
+        
+        for(I=3, MsgArr:count()){
+            Args:pushString(MsgArr[I, string])
+        }
+        
+        CmdTable["FUNC", function](Player, Args)
+        return 1
+    }
+    
+    return 0
+}
+
+
+
+event chat(Player:entity, Message:string, Team:number) {
+    ecc_process(Player, Message)
+}
