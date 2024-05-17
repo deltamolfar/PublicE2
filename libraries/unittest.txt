@@ -1,6 +1,6 @@
-@persist LIB_UNITTEST_INTERNAL_Stack:table
-@persist LIB_UNITTEST_INTERNAL_Config:table
-@persist LIB_UNITTEST_INTERNAL_Stats:table
+@persist LIB_INTERNAL_UNITTEST_Stack:table
+@persist LIB_INTERNAL_UNITTEST_Config:table
+@persist LIB_INTERNAL_UNITTEST_Stats:table
 @strict
 
 #[
@@ -65,6 +65,11 @@
     - Fix separate test's time-took bug (it's incorrect rn).
     - Make the total time-took a sum of all functions, rather then from start of all unit tests, to the end of it. (A lot of unrelated code is also being executed).
     - Make unit test groups.
+    - Make function as a last argument, for ease of use.
+    - If function have a number/string argument, it should pass unique id of the current unit test, for an easier name collision avoidance inside lambdas.
+    - Make unittest_add() return unique id of the unit test + make unittest_run(ID:number)(which will run individual test) + make main loop don't delete, but archive/mark passed tests.
+    
+    - Solve catch execution causing crashes (or remove it's functionality).
     
     ###################################
     ##           UnitTests           ##
@@ -74,9 +79,33 @@
     
     This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
     If you want to change something, and help others, feel free to create an issue/PR.
+    Source - https://github.com/deltamolfar/PublicE2/blob/main/libraries/unittest.txt
 ]#
 
 #include "lib/supertimers"
+
+if( first() || duped() ){
+    LIB_INTERNAL_UNITTEST_Stack = table()
+    LIB_INTERNAL_UNITTEST_Config = table(
+        "FAIL_CALLBACK" = function(INFO:table){
+            if( INFO["SUCCESSFUL_EXECUTION", number] ){
+                printColorC(vec(255,150,150), "\n\n[UNIT-FAIL]", vec(255), ": "+INFO["NAME", string]+"\nExpected: "+INFO["EXPECTED", string]+"\nGot: "+INFO["RESULT", string], "\n")
+            } else{
+                printColorC(vec(255,150,150), "\n\n[UNIT-FAIL]", vec(255), ": "+INFO["NAME", string]+"\nSomething went wrong when executing a function!\nError: "+INFO["CATCH_ERROR", string], "\n")
+            }
+        },
+        "SUCCESS_CALLBACK" = function(INFO:table){
+            printColorC(vec(150,255,150), "\n\n[UNIT-SUCCESS]", vec(255), " - Name:"+INFO["NAME", string]+"\n    Took: ~", vec(255,255,0), floor((systime()-INFO["STARTTIME", number]*1000), 4), "\n")
+        },
+        "KNOWN_UNSUPPORTED_RETURN_TYPES" = array("xdm", "xgt", "xmv", "xrd", "xm2", "xm4", "xuc", "xef", "xwl"),
+        "PERF" = 95
+    )
+    LIB_INTERNAL_UNITTEST_Stats = table(
+        "STARTTIME" = 0,
+        "SUCCESS" = 0,
+        "FAIL" = 0
+    )
+}
 
 function string lib_internal_unittest_getReturnAsString(Func:function){
     const Type = Func:getReturnType()
@@ -111,17 +140,17 @@ function string lib_internal_unittest_getReturnAsString(Func:function){
         case "a",
             return (Func()[angle]):toString()
         default,
-            assert(Type:length()!=0, "[UNITTEST]: NO RETURN TYPE DETECTED. Return type a,s,r,t,v,xv2,xv4,q,f,c,e,b,a,xeo was expected!")
-            assert(0, "[UNITTEST]: UNKNOWN RETURN TYPE '"+Type+"'. Return type a,s,r,t,v,xv2,xv4,q,f,c,e,b,a,xeo was expected!")
+            assert(Type:length()!=0, "[UNITTEST]: NO RETURN TYPE DETECTED. Return type n,a,s,r,t,v,xv2,xv4,q,f,c,e,b,a,xeo was expected!")
+            assert(0, "[UNITTEST]: UNKNOWN RETURN TYPE '"+Type+"'. Return type n,a,s,r,t,v,xv2,xv4,q,f,c,e,b,a,xeo was expected!")
     }
     
     return ""
 }
 
 function lib_internal_unittest_finish(){
-    const TimeSpent = floor((systime()-LIB_UNITTEST_INTERNAL_Stats["STARTTIME", number])*1000, 2)+"ms"
-    const SUCCESS = LIB_UNITTEST_INTERNAL_Stats["SUCCESS", number]
-    const FAIL = LIB_UNITTEST_INTERNAL_Stats["FAIL", number]
+    const TimeSpent = floor((systime()-LIB_INTERNAL_UNITTEST_Stats["STARTTIME", number])*1000, 2)+"ms"
+    const SUCCESS = LIB_INTERNAL_UNITTEST_Stats["SUCCESS", number]
+    const FAIL = LIB_INTERNAL_UNITTEST_Stats["FAIL", number]
     const TOTAL = SUCCESS+FAIL
     
     printColorC(
@@ -146,37 +175,12 @@ function lib_internal_unittest_finish(){
     supertimer_destroy("!%&$UNITTEST")
 }
 
-
-
-if( first() || duped() ){
-    LIB_UNITTEST_INTERNAL_Stack = table()
-    LIB_UNITTEST_INTERNAL_Config = table(
-        "FAIL_CALLBACK" = function(INFO:table){
-            if( INFO["SUCCESSFUL_EXECUTION", number] ){
-                printColorC(vec(255,150,150), "\n\n[UNIT-FAIL]", vec(255), ": "+INFO["NAME", string]+"\nExpected: "+INFO["EXPECTED", string]+"\nGot: "+INFO["RESULT", string], "\n")
-            } else{
-                printColorC(vec(255,150,150), "\n\n[UNIT-FAIL]", vec(255), ": "+INFO["NAME", string]+"\nSomething went wrong when executing a function!\nError: "+INFO["CATCH_ERROR", string], "\n")
-            }
-        },
-        "SUCCESS_CALLBACK" = function(INFO:table){
-            printColorC(vec(150,255,150), "\n\n[UNIT-SUCCESS]", vec(255), " - Name:"+INFO["NAME", string]+"\n    Took: ~", vec(255,255,0), floor((systime()-INFO["STARTTIME", number]*1000), 4), "\n")
-        },
-        "KNOWN_UNSUPPORTED_RETURN_TYPES" = array("xdm", "xgt", "xmv", "xrd", "xm2", "xm4", "xuc", "xef", "xwl"),
-        "PERF" = 95
-    )
-    LIB_UNITTEST_INTERNAL_Stats = table(
-        "STARTTIME" = 0,
-        "SUCCESS" = 0,
-        "FAIL" = 0
-    )
-}
-
 function number unittest_getPerf(){
-    return LIB_UNITTEST_INTERNAL_Config["PERF", number]
+    return LIB_INTERNAL_UNITTEST_Config["PERF", number]
 }
 
 function unittsest_setPerf(Perf:number){
-    LIB_UNITTEST_INTERNAL_Config["PERF", number] = clamp(Perf, 0, 100)
+    LIB_INTERNAL_UNITTEST_Config["PERF", number] = clamp(Perf, 0, 100)
 }
 
 function number unittest_isrunning(){
@@ -188,55 +192,50 @@ function number unittest_start(){
     
     if( !supertimer_exists("!%&$UNITTEST") ){
         supertimer("!%&$UNITTEST", 1, 0, function(){
-            while( perf(LIB_UNITTEST_INTERNAL_Config["PERF", number]) && LIB_UNITTEST_INTERNAL_Stack:count()>0 ){
-                const TestCase = LIB_UNITTEST_INTERNAL_Stack:popTable()
+            while( perf(LIB_INTERNAL_UNITTEST_Config["PERF", number]) && LIB_INTERNAL_UNITTEST_Stack:count()>0 ){
+                const TestCase = LIB_INTERNAL_UNITTEST_Stack:popTable()
+                const Name = TestCase["NAME", string]
                 const StartTime = systime()
     
                 try{
                     const ReturnValue = lib_internal_unittest_getReturnAsString(TestCase["FUNC", function])
                     
                     if( ReturnValue!=TestCase["EXPECT", string] ){
-                        const INFO = table(
+                        LIB_INTERNAL_UNITTEST_Stats["FAIL", number] = LIB_INTERNAL_UNITTEST_Stats["FAIL", number]+1
+                        LIB_INTERNAL_UNITTEST_Config["FAIL_CALLBACK", function](table(
                             "SUCCESSFUL_EXECUTION" = 1,
                             "NAME" = TestCase["NAME", string],
                             "EXPECTED" = TestCase["EXPECT", string],
                             "RESULT" = ReturnValue
-                        )
-                        
-                        LIB_UNITTEST_INTERNAL_Stats["FAIL", number] = LIB_UNITTEST_INTERNAL_Stats["FAIL", number]+1
-                        LIB_UNITTEST_INTERNAL_Config["FAIL_CALLBACK", function](INFO)
+                        ))
                         continue
                     }
                     
-                } catch(ERROR:string){
-                    const INFO = table(
+                } catch(ERROR:string){ # Catch is broken. Will fix someday.
+                    LIB_INTERNAL_UNITTEST_Stats["FAIL", number] = LIB_INTERNAL_UNITTEST_Stats["FAIL", number]+1
+                    LIB_INTERNAL_UNITTEST_Config["FAIL_CALLBACK", function](table(
                         "SUCCESSFUL_EXECUTION" = 0,
-                        "NAME" = TestCase["NAME", string],
-                        "CATCH_ERROR" = ERROR
-                    )
-                    
-                    LIB_UNITTEST_INTERNAL_Stats["FAIL", number] = LIB_UNITTEST_INTERNAL_Stats["FAIL", number]+1
-                    LIB_UNITTEST_INTERNAL_Config["FAIL_CALLBACK", function](INFO)
+                        #"NAME" = TestCase["NAME", string], #< For some reason - this results in compiler error. No idea.
+                        "CATCH_ERROR" = "E2 Error. Which? - No idea. Compiler won't tell us. Good luck :D"
+                    ))
                     continue
                 }
-                
-                const INFO = table(
+
+                LIB_INTERNAL_UNITTEST_Stats["SUCCESS", number] = LIB_INTERNAL_UNITTEST_Stats["SUCCESS", number]+1
+                LIB_INTERNAL_UNITTEST_Config["SUCCESS_CALLBACK", function](table(
                     "SUCCESSFUL_EXECUTION" = 1,
                     "NAME" = TestCase["NAME", string],
                     "STARTTIME" = StartTime
-                )
-                
-                LIB_UNITTEST_INTERNAL_Stats["SUCCESS", number] = LIB_UNITTEST_INTERNAL_Stats["SUCCESS", number]+1
-                LIB_UNITTEST_INTERNAL_Config["SUCCESS_CALLBACK", function](INFO)
+                ))
             }
             
-            if( LIB_UNITTEST_INTERNAL_Stack:count()<=0 ){
+            if( LIB_INTERNAL_UNITTEST_Stack:count()<=0 ){
                 lib_internal_unittest_finish()
             }
         }, 0)
     }
     
-    LIB_UNITTEST_INTERNAL_Stats["STARTTIME", number] = systime()
+    LIB_INTERNAL_UNITTEST_Stats["STARTTIME", number] = systime()
     supertimer_unpause("!%&$UNITTEST")
     
     return 1
@@ -253,9 +252,9 @@ function number unittest_stop(){
 
 function unittest_add(Unit:function, ExpectedReturn:string, Name:string){
     Name = Name:length()==0 ? Unit:toString()+" - No description given." : Unit:toString()+" - "+Name
-    assert(LIB_UNITTEST_INTERNAL_Config["KNOWN_UNSUPPORTED_RETURN_TYPES", array]:indexOf(Unit:getReturnType())==0, "[UNITTEST]: RETURN TYPE '"+Unit:getReturnType()+"' IS NOT SUPPORTED!")
+    assert(LIB_INTERNAL_UNITTEST_Config["KNOWN_UNSUPPORTED_RETURN_TYPES", array]:indexOf(Unit:getReturnType())==0, "[UNITTEST]: RETURN TYPE '"+Unit:getReturnType()+"' IS NOT SUPPORTED!")
     
-    LIB_UNITTEST_INTERNAL_Stack:insertTable(1, table(
+    LIB_INTERNAL_UNITTEST_Stack:insertTable(1, table(
         "FUNC" = Unit,
         "EXPECT" = ExpectedReturn,
         "NAME" = Name
@@ -277,6 +276,7 @@ function unittest_add(Unit:function, ExpectedReturn:bone, Name:string){ unittest
 function unittest_add(Unit:function, ExpectedReturn:egpobject, Name:string){ unittest_add(Unit, ExpectedReturn:toString(), Name) }
 function unittest_add(Unit:function, ExpectedReturn:angle, Name:string){ unittest_add(Unit, ExpectedReturn:toString(), Name) }
 
+function unittest_add(Unit:function, ExpectedReturn:string){ unittest_add(Unit, ExpectedReturn, "") }
 function unittest_add(Unit:function, ExpectedReturn:number){ unittest_add(Unit, ExpectedReturn:toString(), "") }
 function unittest_add(Unit:function, ExpectedReturn:array){ unittest_add(Unit, ExpectedReturn:toString(), "") }
 function unittest_add(Unit:function, ExpectedReturn:table){ unittest_add(Unit, ExpectedReturn:toString(), "") }
