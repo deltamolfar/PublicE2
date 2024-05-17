@@ -39,10 +39,14 @@
         3b) You can watch how does your tests perform in a life mode, before every test is executed - in the console.
         
     Tips:
-    - I do not recommend using this UnitTest in your E2 itself. Either add it during development, and then delete it, or make separate file to test your E2,
-        and then include it using #include, along with this library, if possible.
+    - Remember to disable this lib's function calls/lib itself after you finished with development, in a same way as you should disable @strict.
+        Either add it during development, and then delete it, make separate function/code block that you can comment/uncomment,
+        or make separate file to test your E2, and then include it using #include, along with this library, if possible.
         Reason: During execution - this lib will use significant portion of resources. In "production" E2s, that may cause to crashes/unexpected behaviour.
         (You will also have unneccessary printouts)
+        
+        Tho during development, I would recommend to leave this library always enabled, as it can catch early bugs,
+        or even let you create E2s using Test-driver development (https://en.wikipedia.org/wiki/Test-driven_development).
         
     WARNINGS:
     - This lib DOES NOT support:
@@ -56,6 +60,11 @@
             unittest_add( function(){
                 return rangerOffset(50000, entity():toWorld(vec(0,0,100)), vec(0,0,-1)):entity()==entity()
             }, 1, " - This ranger will hit my E2!" )
+            
+    TODO:
+    - Fix separate test's time-took bug (it's incorrect rn).
+    - Make the total time-took a sum of all functions, rather then from start of all unit tests, to the end of it. (A lot of unrelated code is also being executed).
+    - Make unit test groups.
     
     ###################################
     ##           UnitTests           ##
