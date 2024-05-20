@@ -1,0 +1,397 @@
+@persist LIB_INTERNAL_GITHUBMAP_Config:table
+@persist LIB_INTERNAL_GITHUBMAP_Data:table
+@persist LIB_INTERNAL_GITHUBMAP_IsLocked:number
+@persist LIB_INTERNAL_GITHUBMAP_DefaultFilterLambda:function
+@persist LIB_INTERNAL_GITHUBMAP_DefaultExecutionFinishLambda:function
+@persist LIB_INTERNAL_GITHUBMAP_UniqueID:number
+@persist LIB_INTERNAL_GITHUBMAP_CurrentProcessTable:table
+
+#[
+    Library that let you automatically fetch(get) open github .txt files (support for non-txt file can be easily added, but I see no reason).
+    
+    Usage:
+    0) Import this library on global scope, or (better) uncomment the very bottom, and use this as E2 itself.
+    1) Register new fetch map request using githubmap_add(ssf).
+        1a) Parameters description of githubmap_add(
+                string: Name of the new map request. (optional - will be auto-generated if none provided)
+                string: Link to the github folder/root. ONLY IN FORM OF https://github.com/<author>/<repo>!!! (No alternative links obv)
+                function: Filter function to which will the table be passed with the file full path, and file size, which will make you able to 
+                decide do you want to include that file or not. (To ignore that file - return 0. To include - return 1,
+                (optional - will be used default filter function instead (ignored readme, license files, and files that are bigger then 1 Mb))
+            )
+        1b) It will return assigned id to you.
+        1c) If you decided to use custom filter lambda function, NOTE that it HAVE to take table as a first and only parameter, and it HAVE to return either 0(ignore) or 1(approve).
+            The table will have "FULLPATH"(full path of the file from author until file itself+it's extension) and "SIZE"(in bytes) keys.
+    2) Execute your map request using filemap_execute(sf).
+        2a) Parameters description of filemap_execute(
+                string: Name of the new map request.
+                function: Callback function, that is to be called on end of execution. Function can either have a string as first and only paremeter
+                or no parameters at all.
+                
+                If you provide string as first and only parameter - name of finished request will be passed. You can use that in pair with
+                githubmap_getMapHtmlLinks(MapName:string), to get an array of links to all html pages to each file, or if no parameters were set
+                you can just get links as I do in examples.
+                (Tbh I find that just using static name easier, but I've given you this opportunity, do whatever you like with that :D)
+            )
+        2b) Callback lambda will be called upon end of execution.
+        2c) During execution, the githubmap will be locked, and you will not be able to execute new maps until old one is finished!
+    
+     
+    TIPS:
+    - You can disable chat printouts, if you don't like them using githubmap_setVerbose(0), or enable them vice versa.
+    - You can disable crashes on invalid input, and make this lib silently fail
+        (usually making functions return empty values instead of informative ones) by using githubmap_setStrict(0), or enable that vice versa.
+        
+------------------------- Getting all downlaod links for all files in the repo
+
+@persist BaseURL:string Files:array
+
+#include "lib/github_map"
+
+if( first() || duped() ){
+    const MapName = githubmap_newMap("https://github.com/deltamolfar/PublicE2/")
+    githubmap_execute(
+        MapName,
+        function(){
+            print(_HUD_PRINTCONSOLE, githubmap_getMapDownloadLinks(MapName))
+        }
+    )
+}
+------------------------- Copying whole repo in pair with github fetcher (https://github.com/deltamolfar/PublicE2/blob/main/libraries/github_fetch.txt)
+#include "lib/github_fetch"
+#include "lib/github_map"
+
+if( first() || duped() ){
+    const MapName = githubmap_newMap("https://github.com/deltamolfar/PublicE2/")
+    githubmap_execute(
+        MapName,
+        function(){
+            const Links = githubmap_getMapHtmlLinks(MapName)
+            
+            foreach(_:number, V:string = Links){
+                githubfetch_addRequest(V, "!")
+            }
+            
+            githubfetch_executeAll()
+        }
+    )
+}
+-------------------------
+            
+    TODO:
+    - Add possibility to stop requests prematurely.
+
+    ###################################
+    ##           GitHubMap           ##
+    ##      made by deltamolfar      ##
+    ##        Glory to Ukraine       ##
+    ###################################
+    
+    This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
+    If you want to change something, and help others, feel free to create an issue/PR.
+    Source - https://github.com/deltamolfar/PublicE2/blob/main/libraries/github_map.txt
+]#
+
+if( first() || duped() ){
+    LIB_INTERNAL_GITHUBMAP_Config = table(
+        "VERBOSE" = 1,
+        "STRICT" = 1
+    )
+    
+    LIB_INTERNAL_GITHUBMAP_Data = table()
+    LIB_INTERNAL_GITHUBMAP_CurrentProcessTable = table()
+    LIB_INTERNAL_GITHUBMAP_IsLocked = 0
+    LIB_INTERNAL_GITHUBMAP_UniqueID = 0
+    
+    LIB_INTERNAL_GITHUBMAP_DefaultFilterLambda = function(FileData:table){
+        const PathArray = FileData["PATH", string]:explode("/")
+        const Size = FileData["SIZE", number]
+        
+        #ifdef fileName()
+            if( Size>fileMaxSize()*1000 ){ return 0 }
+        #endif
+        
+        if( PathArray[PathArray:count(), string]:explode(".")[2, string]:lower()!="txt" ){
+            return 0
+        }
+        
+        return 1
+    }
+    
+    LIB_INTERNAL_GITHUBMAP_DefaultExecutionFinishLambda = function(DATA:table){
+        if( DATA["IsSuccess", number] ){
+            printColor(vec(0,255,0), "Sucess")
+        } else{
+            printColor(vec(255,0,0), "Failute")
+        }
+    }
+    
+    timer("lib.internal.githubmap", 500)
+}
+
+
+
+function number githubmap_isLocked(){
+    return LIB_INTERNAL_GITHUBMAP_IsLocked
+}
+
+# Tells this lib either should it send chat notifications on progress(1) or not(0).
+function number githubmap_setVerbose(NewState:number){
+    NewState = clamp(floor(NewState), 0, 1)
+    LIB_INTERNAL_GITHUBMAP_Config["VERBOSE", number] = NewState
+    return NewState
+}
+
+# Tells this lib either should it shutdown with info(1) or siltently fail(0) on input errors.
+function number githubmap_setStrict(NewState:number){
+    NewState = clamp(floor(NewState), 0, 1)
+    LIB_INTERNAL_GITHUBMAP_Config["STRICT", number] = NewState
+    return NewState
+}
+
+# Internal function. Prints info given the type, and the Verbose settings.
+function lib_internal_githubmap_beVerbose(Type:string, Message:string){
+    if( !LIB_INTERNAL_GITHUBMAP_Config["VERBOSE", number] ){ return }
+    
+    switch( Type:trim():lower() ){
+        case "warning",
+            printColor(vec(160,135,200), "[GITHUB-MAP] - ", vec(255,225,100), "WARNING: ", Message)
+        break
+        case "fail",
+        case "error",
+            printColor(vec(160,135,200), "[GITHUB-MAP] - ", vec(255,100,100), "ERROR: ", Message)
+        break
+        case "success",
+            printColor(vec(160,135,200), "[GITHUB-MAP] - ", vec(100,255,100), "SUCCESS: ", Message)
+        break
+        case "info",
+            printColor(vec(160,135,200), "[GITHUB-MAP] - ", vec(50,200,200), "INFO: ", Message)
+        break
+        default,
+            printColor(vec(160,135,200), "[GITHUB-MAP] - ", vec(255), Message)
+        break
+    }
+}
+
+function number lib_internal_githubmap_assertOnStrict(Statement:number, Description:string, Func:function){
+    if( Statement ){ return 0 }
+    if( !LIB_INTERNAL_GITHUBMAP_Config["STRICT", number] ){ return 1 }
+    
+    Func()
+    assert(0, Description)
+    return 1
+}
+function number lib_internal_githubmap_assertOnStrict(Statement:number, Description:string){ return lib_internal_githubmap_assertOnStrict(Statement, Description, function(){}) }
+
+# Is this lib ready for next execution?
+function number githubmap_canExecute(){
+    return !LIB_INTERNAL_GITHUBMAP_IsLocked && httpCanRequest()
+}
+
+# Attempts to start new job.
+# Returns 0, if not ready.
+function number githubmap_execute(MapName:string, Callback:function){
+    if( lib_internal_githubmap_assertOnStrict(LIB_INTERNAL_GITHUBMAP_Data:exists(MapName), "githubmap_execute(sf): No map object found. Register one using githubMap_newMap(ssf).") ){
+        return -1
+    }
+    
+    if( !githubmap_canExecute() ){
+        return 0
+    }
+    
+    LIB_INTERNAL_GITHUBMAP_IsLocked = 1
+    LIB_INTERNAL_GITHUBMAP_CurrentProcessTable = table(
+        "MapName" = MapName,
+        "Callback" = Callback,
+        "Stack" = array(),
+        "WaitingForHTTP" = 1,
+        "Counter" = 0
+    )
+    
+    httpRequest(format("https://api.github.com/repos/%s/%s/contents", LIB_INTERNAL_GITHUBMAP_Data[MapName, table]["DATA.OWNER", string], LIB_INTERNAL_GITHUBMAP_Data[MapName, table]["DATA.REPO", string]))
+    
+    return 1
+}
+function number githubmap_execute(MapName:string){ return githubmap_execute(MapName, LIB_INTERNAL_GITHUBMAP_DefaultExecutionFinishLambda) }
+
+# Used internally to make unique names.
+function number lib_internal_githubmap_getNextUniqueID(){
+    LIB_INTERNAL_GITHUBMAP_UniqueID++
+    return LIB_INTERNAL_GITHUBMAP_UniqueID
+}
+
+# Main function. Creates new mapping request.
+function string githubmap_newMap(MapName:string, URL:string, FilterLambda:function){
+    if( lib_internal_githubmap_assertOnStrict(FilterLambda:getParameterTypes()[1, string]=="t", "githubmap_newMap(ssf): Filter function HAVE to take table parameter (it's where will the potential file full path and size be passed to ('FILE':str, 'SIZE':number))") ){
+        return ""
+    }
+    
+    if( lib_internal_githubmap_assertOnStrict(MapName:length()>0, "githubmap_newMap(ssf): Map name can't be empty!") ){
+        return ""
+    }
+    
+    URL = URL[URL:length()]=="/" ? URL:sub(0, URL:length()) : URL
+    const UrlArray = URL:replace("/blob/", "/"):explode("/")
+    
+    if( lib_internal_githubmap_assertOnStrict(UrlArray[UrlArray:count(), string]:find(".")==0, "githubmap_newMap(ssf): URL Can't be leading to a singular file. Only folders/repo roots are allowed!") ){
+        return ""
+    }
+    
+    LIB_INTERNAL_GITHUBMAP_Data[MapName, table] = table(
+        "STATS.FILES" = 0,
+        "STATS.DIRS" = 0,
+        "STATS.SUMSIZE" = 0,
+        "STATS.IGNORED" = 0,
+        "DATA" = table(),
+        "DATA.OWNER" = UrlArray[4, string],
+        "DATA.REPO" = UrlArray[5, string],
+        "DATA.EXECUTED" = 0,
+        "FILE.FILTER" = FilterLambda,
+        "FILE.LINKS.DOWNLOAD" = array(),
+        "FILE.LINKS.HTML" = array()
+    )
+    
+    return MapName
+}# Aliases
+function githubmap_newMap(MapName:string, URL:string){ return githubmap_newMap(MapName, URL, LIB_INTERNAL_GITHUBMAP_DefaultFilterLambda) }
+function githubmap_newMap(URL:string){ return githubmap_newMap("githubmap.defaultname."+lib_internal_githubmap_getNextUniqueID(), URL, LIB_INTERNAL_GITHUBMAP_DefaultFilterLambda) }
+function githubmap_newMap(URL:string, FilterLambda:function){ return githubmap_newMap("githubmap.defaultname."+lib_internal_githubmap_getNextUniqueID(), URL, FilterLambda) }
+
+# Is particular map request already executed?
+function number githubmap_hasExecuted(MapName:string){
+    if( lib_internal_githubmap_assertOnStrict(LIB_INTERNAL_GITHUBMAP_Data:exists(MapName), "githubmap_hasExecuted(s): Map name '"+MapName+"' not found!") ){
+        return -1
+    }
+    
+    return LIB_INTERNAL_GITHUBMAP_Data[MapName, table]["DATA.EXECUTED", number]
+}
+
+# Returns raw table of the map request object.
+function table githubmap_getMap(MapName:string){
+    if( lib_internal_githubmap_assertOnStrict(LIB_INTERNAL_GITHUBMAP_Data:exists(MapName), "githubmap_getMap(s): Map name '"+MapName+"' not found!") ){
+        return table()
+    }
+    
+    return LIB_INTERNAL_GITHUBMAP_Data[MapName, table]
+}
+
+# Returns direct download links to all files that was found. (Obv it will return empty array if map request wasn't yet executed)
+function array githubmap_getMapDownloadLinks(MapName:string){
+    if( lib_internal_githubmap_assertOnStrict(LIB_INTERNAL_GITHUBMAP_Data:exists(MapName), "githubmap_getMapDownloadLinks(s): Map name '"+MapName+"' not found!") ){
+        return array()
+    }
+    
+    return LIB_INTERNAL_GITHUBMAP_Data[MapName, table]["FILE.LINKS.DOWNLOAD", array]
+}
+
+# Returns html links to all files that was found. (Obv it will return empty array if map request wasn't yet executed)
+function array githubmap_getMapHtmlLinks(MapName:string){
+    if( lib_internal_githubmap_assertOnStrict(LIB_INTERNAL_GITHUBMAP_Data:exists(MapName), "githubmap_getMapHtmlLinks(s): Map name '"+MapName+"' not found!") ){
+        return array()
+    }
+    
+    return LIB_INTERNAL_GITHUBMAP_Data[MapName, table]["FILE.LINKS.HTML", array]
+}
+
+
+
+event httpLoaded(Body:string, Size:number, Url:string) {
+    if( !LIB_INTERNAL_GITHUBMAP_IsLocked ){ exit() }
+
+    LIB_INTERNAL_GITHUBMAP_CurrentProcessTable["WaitingForHTTP", number] = 0
+    
+    if( Body=="404: Not Found" ){
+        lib_internal_githubmap_beVerbose("error", Url+" Returned: File not found (404) | Check your request link for typos!")
+        assert(0, "404: Not Found (Most probable - incorrect path/to/file/filename.txt)")
+    } elseif( Body=="403: Forbidden" ){
+        lib_internal_githubmap_beVerbose("error", Url+" Returned: File not accessible (403) | Recheck your request link! (How did you get it tho?)")
+        assert(0, "403: Forbidden (You're not authorized to GET from that url)")
+    } elseif( Body=="400: Bad Request" ){
+        lib_internal_githubmap_beVerbose("error", Url+" Returned: Bad request sent | Please report it to the developer (@deltamolfar). (Incorrect requests should be prevented by this lib).")
+        assert(0, "400: Bad Request (Report it to the developer of this library (deltamolfar))")
+    } elseif( Body=="500: Internal Server Error" ){
+        lib_internal_githubmap_beVerbose("error", Url+" Returned: Github internal server error.")
+        assert(0, "500: Internal Server Error (You shouldn't ever see it. You may report it to github itself)")
+    }
+    
+    const CurrentMap = LIB_INTERNAL_GITHUBMAP_Data[LIB_INTERNAL_GITHUBMAP_CurrentProcessTable["MapName", string], table]
+    
+    const Contents = jsonDecode(Body)
+    
+    foreach (_:number, Item:table = Contents) {
+        if (Item["type", string] == "dir") {
+            CurrentMap["STATS.DIRS", number] = CurrentMap["STATS.DIRS", number]+1
+            lib_internal_githubmap_beVerbose("info", "Found new directory: "+Item["name", string]+" ("+CurrentMap["STATS.DIRS", number]+")")
+            
+            const NewURL = Item["url", string]
+            LIB_INTERNAL_GITHUBMAP_CurrentProcessTable["Stack", array]:pushString(NewURL)
+            continue
+        }
+        
+        if (Item["type", string] == "file") {
+            if (CurrentMap["FILE.FILTER", function](table("PATH"=Item["path", string], "SIZE"=Item["size", number]))[number]) {
+                CurrentMap["STATS.FILES", number] = CurrentMap["STATS.FILES", number]+1
+                lib_internal_githubmap_beVerbose("success", "Found new file: "+Item["name", string]+" ("+CurrentMap["STATS.FILES", number]+")")
+                
+                CurrentMap["FILE.LINKS.DOWNLOAD", array]:pushString( Item["download_url", string] )
+                CurrentMap["FILE.LINKS.HTML", array]:pushString( Item["html_url", string] )
+                CurrentMap["STATS.SUMSIZE", number] = CurrentMap["STATS.SUMSIZE", number]+Item["size", number] #:toNumber()
+            } else{
+                CurrentMap["STATS.IGNORED", number] = CurrentMap["STATS.IGNORED", number]+1
+                lib_internal_githubmap_beVerbose("info", "Ignored found file: " + Item["name", string])
+            }
+        }
+    }
+}
+
+event httpErrored(Error:string, Url:string) {
+    if( !LIB_INTERNAL_GITHUBMAP_IsLocked ){ exit() }
+    
+    lib_internal_githubmap_beVerbose("error", "HTTP Request failed: " + Error)
+    assert(0, "github mapping failed. Reason: HTTP Error encountered. Error: "+Error)
+}
+
+
+if( clk("lib.internal.githubmap") ){
+    timer("lib.internal.githubmap", 500)
+    
+    if( !LIB_INTERNAL_GITHUBMAP_IsLocked ){ exit() }
+    if( LIB_INTERNAL_GITHUBMAP_CurrentProcessTable["WaitingForHTTP", number] ){ exit() }
+    
+    if( LIB_INTERNAL_GITHUBMAP_CurrentProcessTable["Stack", array]:count()<=0 ){
+        LIB_INTERNAL_GITHUBMAP_IsLocked = 0
+        LIB_INTERNAL_GITHUBMAP_Data[LIB_INTERNAL_GITHUBMAP_CurrentProcessTable["MapName", string], table]["DATA.EXECUTED", number] = 1
+        
+        lib_internal_githubmap_beVerbose("success", "Execution finished.
+         Files found: "+LIB_INTERNAL_GITHUBMAP_Data[LIB_INTERNAL_GITHUBMAP_CurrentProcessTable["MapName", string], table]["STATS.FILES", number]+"
+         Files ignored: "+LIB_INTERNAL_GITHUBMAP_Data[LIB_INTERNAL_GITHUBMAP_CurrentProcessTable["MapName", string], table]["STATS.IGNORED", number]+"
+         Directories found: "+LIB_INTERNAL_GITHUBMAP_Data[LIB_INTERNAL_GITHUBMAP_CurrentProcessTable["MapName", string], table]["STATS.DIRS", number]+"
+         Sum found file size: "+LIB_INTERNAL_GITHUBMAP_Data[LIB_INTERNAL_GITHUBMAP_CurrentProcessTable["MapName", string], table]["STATS.SUMSIZE", number]
+        
+        )
+        
+        const Types = LIB_INTERNAL_GITHUBMAP_CurrentProcessTable["Callback", function]:getParameterTypes()
+        if( Types[1, string]=="s" ){
+            LIB_INTERNAL_GITHUBMAP_CurrentProcessTable["Callback", function](LIB_INTERNAL_GITHUBMAP_CurrentProcessTable["MapName", string])
+        } elseif(Types:count()==0){
+            LIB_INTERNAL_GITHUBMAP_CurrentProcessTable["Callback", function]()
+        } else{
+            assert(0, "Execute-registered callback have incorrect parameters. Callback should either have 1 string parameter, or no parameters! (Although report it to developer(deltamolfar), as you shouldn't have seen that message at all).")
+        }
+    } elseif( httpCanRequest() ){
+        LIB_INTERNAL_GITHUBMAP_CurrentProcessTable["WaitingForHTTP", number] = 1
+        LIB_INTERNAL_GITHUBMAP_CurrentProcessTable["Counter", number] = LIB_INTERNAL_GITHUBMAP_CurrentProcessTable["Counter", number] + 1
+        const Link = LIB_INTERNAL_GITHUBMAP_CurrentProcessTable["Stack", array]:popString()
+        httpRequest(Link)
+        lib_internal_githubmap_beVerbose("info", "Mapping "+Link:sub(30, Link:find("?ref=")==0 ? Link:length() : Link:find("?ref=")-1)+"... ("+LIB_INTERNAL_GITHUBMAP_CurrentProcessTable["Counter", number]+"/"+(LIB_INTERNAL_GITHUBMAP_CurrentProcessTable["Stack", array]:count()+LIB_INTERNAL_GITHUBMAP_CurrentProcessTable["Counter", number])+")")
+    }
+}
+#[elseif( first() ){
+    const A = githubmap_newMap("https://github.com/deltamolfar/PublicE2", 1)
+
+    print(githubmap_execute(A, function(MapName:string){ print(_HUD_PRINTCONSOLE, githubmap_getMap(MapName)) }))
+}]#
+
+
+
+
