@@ -1,0 +1,420 @@
+@persist LIB_INTERNAL_GITHUBFETCH_Config:table
+@persist LIB_INTERNAL_GITHUBFETCH_Stack:table
+@persist LIB_INTERNAL_GITHUBFETCH_DefaultCallback:function
+@persist LIB_INTERNAL_GITHUBFETCH_StackIterator:number
+@persist LIB_INTERNAL_GITHUBFETCH_Stats:table
+@persist LIB_INTERNAL_GITHUBFETCH_IsLocked:number
+@persist LIB_INTERNAL_GITHUBFETCH_MainDir:string
+
+#[
+    Library that let you automatically fetch(get) open github .txt files (support for non-txt file can be easily added, but I see no reason).
+    
+    Usage:
+    0) Import this library on global scope, or (better) uncomment the very bottom, and use this as E2 itself.
+    1) Register new fetch requests using githubfetch_addRequest(sssf) (or it's aliases, githubfetch_addRequest(sss), githubfetch_addRequest(ss), githubfetch_addRequest(s))
+        1a) Parameters description of githubfetch_addRequest(
+            string: Full github link to the .txt file.
+            string: Relative path in local storage. (optional - github's path by default ("!" - default value))
+                NOTE: IT WILL ALWAYS BE INSIDE e2shared/github_fetch FOLDER. (But obv you can always move it manually using your OS directory explorer)
+            string: Name to overwrite the name of the file with. (optional - github's file name by default)
+            function: Function to call, when the request is fully executed. (optional - this lib have console log callback functions by default)
+                NOTE: To know the request status, make sure to add NAME:table parameter to the function, so this lib can actually send you information. If no table parameter given - your function
+                will be called, but you will have no way to know the status of the request.
+        1b) Example of adding a new fetch request:
+            githubfetch_addRequest("https://github.com/deltamolfar/PublicE2/blob/main/libraries/supertimers.txt")
+                Will result to have supertimers saved at "e2shared/github_fetch/deltamolfar/PublicE2/main/libraries/supertimers.txt"
+            githubfetch_addRequest("https://github.com/deltamolfar/PublicE2/blob/main/libraries/supertimers.txt", "fetch_results")
+                Will result to have supertimers saved at "e2shared/github_fetch/fetch_results/supertimers.txt"
+            githubfetch_addRequest("https://github.com/deltamolfar/PublicE2/blob/main/libraries/supertimers.txt", "fetch_results", "g_lua_like_timers")
+                Will result to have supertimers saved at "e2shared/github_fetch/fetch_results/g_lua_like_timers.txt"
+            githubfetch_addRequest("https://github.com/deltamolfar/PublicE2/blob/main/libraries/supertimers.txt", "fetch_results", "g_lua_like_timers", function(DATA:table){ if(DATA["IsSuccess", number]){print("yay")}else{assert(0, "Reason: "+DATA["Reason", string])} })
+                Will result to have supertimers saved at "e2shared/github_fetch/fetch_results/g_lua_like_timers.txt"
+                AND yay in a chat, or in case of any errors - in Reason asserted.
+                
+    2) Execute your fetch requests.
+        2a) One (and most comfortable way) to execute your requests - is to just call githubfetch_executeAll(). This will result in a loop, that will finish once every request is processed.
+        2b) Alternative way is to use either githubfetch_execute(n), which takes ID of the request (each request have an id, that is being returned when you call githubfetch_addRequest(...)).
+            NOTE: Due to nature of http and file extensions, the execution is in async form. Which means that each execution waits for all jobs to finish
+            (getting local file, getting online file, and then, if needed waiting for file to be writen to local file), before letting any other execution to be performed.
+            So when you call githubfetch_execute(n) - you will get 0, if the execution can not be yet done (either other process is being executed right now, or you have http/file cooldown)
+            If you call githubfetch_execute(n) with invalid id - it will return -1, and no execution will start.
+     
+    TIPS:
+    - You can disable chat printouts, if you don't like them using githubfetch_setVerbose(0), or enable them vice versa.
+    - I see no reason, so I don't recommend using it as a library even tho it can be done
+        (Better either use this E2 itself as a tool, or better yet make a set of small basic E2s that are for different purposes/repos.)
+        Examples of such E2s:
+        
+------------------------- Copying static files
+@persist BaseURL:string Files:array
+
+#include "lib/github_fetch"
+
+if( first() || duped() ){
+    BaseURL = "https://github.com/deltamolfar/PublicE2/blob/main/libraries/"
+    Files = array("supertimers", "unittest", "interp", "string", "rangers", "math", "dialog", "easy_chat_commands", "easy_chat_print")
+    
+    foreach(_:number, V:string = Files){
+        githubfetch_addRequest(BaseURL+V, "deltamolfar-libs")
+    }
+    
+    githubfetch_executeAll()
+}
+------------------------- Copying whole repo in pair with github mapper (https://github.com/deltamolfar/PublicE2/blob/main/libraries/github_map.txt)
+#include "lib/github_fetch"
+#include "lib/github_map"
+
+if( first() || duped() ){
+    const MapName = githubmap_newMap("https://github.com/deltamolfar/PublicE2/")
+    githubmap_execute(
+        MapName,
+        function(){
+            const Links = githubmap_getMapHtmlLinks(MapName)
+            
+            foreach(_:number, V:string = Links){
+                githubfetch_addRequest(V, "!")
+            }
+            
+            githubfetch_executeAll()
+        }
+    )
+}
+-------------------------
+            
+    TODO:
+    - Enjoy life.
+    - Don't rewrite it for 5th time.
+
+    P.S. - Github pusher will not, and should not be done in E2 due to security issues!
+    
+    ###################################
+    ##          GitHubFetch          ##
+    ##      made by deltamolfar      ##
+    ##        Glory to Ukraine       ##
+    ###################################
+    
+    This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
+    If you want to change something, and help others, feel free to create an issue/PR.
+    Source - https://github.com/deltamolfar/PublicE2/blob/main/libraries/github_fetch.txt
+]#
+
+if( first() || duped() ){
+    LIB_INTERNAL_GITHUBFETCH_Config = table(
+        "FileSizeLimit" = fileMaxSize(), # Make 0 to be able to download any(not sure, but 100% above the fileMaxSize()) size file.
+        "MainDir" = "github_fetch",
+        "RawContentURL" = "https://raw.githubusercontent.com/",
+        "Verbose" = 1
+    )
+
+    LIB_INTERNAL_GITHUBFETCH_MainDir = ">e2shared/"+LIB_INTERNAL_GITHUBFETCH_Config["MainDir", string]
+    LIB_INTERNAL_GITHUBFETCH_IsLocked = 0
+    LIB_INTERNAL_GITHUBFETCH_StackIterator = -1
+    LIB_INTERNAL_GITHUBFETCH_Stack = table()
+    LIB_INTERNAL_GITHUBFETCH_Stats = table(
+        "FETCHED" = 0,
+        "FAILS" = 0
+    )
+    
+    LIB_INTERNAL_GITHUBFETCH_DefaultCallback = function(DATA:table){
+        if( DATA["IsSuccess", number] ){
+            printColorC(vec(215, 190, 255), "\n[GITHUB-FETCH]: ", vec(0,255,0), "Fetch successful.", vec(255), "\n    File '"+DATA["FileName", string]+"' saved at '"+DATA["FilePath", string]+"'\n    From: "+DATA["URL", string], "\n\n")
+        } else{
+            printColorC(vec(215, 190, 255), "\n[GITHUB-FETCH]: ", vec(255,0,0), "Fetch failed.", vec(255), "\n    File '"+DATA["FileName", string]+"'\n    Reason: "+DATA["Reason", string]+"\n    Attempted to fetch from: "+DATA["URL", string], "\n\n")
+        }
+    }
+}
+
+# Sets maximum file limit to be downloaded.
+function githubfetch_setMaxFileSize(Number:number){
+    LIB_INTERNAL_GITHUBFETCH_Config["FileSizeLimit", number] = Number
+}
+
+# Should this lib print in chat about current progress?
+function githubfetch_setVerbose(State:number){
+    LIB_INTERNAL_GITHUBFETCH_Config["Verbose", number] = State
+}
+
+# Internal function. Prints info given the type, and the Verbose settings.
+function lib_internal_githubfetch_beVerbose(Type:string, Message:string){
+    if( !LIB_INTERNAL_GITHUBFETCH_Config["Verbose", number] ){ return }
+    
+    switch( Type:trim():lower() ){
+        case "warning",
+            printColor(vec(215, 190, 255), "[GITHUB-FETCH] - ", vec(255,225,100), "WARNING: ", Message)
+        break
+        case "fail",
+        case "error",
+            printColor(vec(215, 190, 255), "[GITHUB-FETCH] - ", vec(255,100,100), "ERROR: ", Message)
+        break
+        case "success",
+            printColor(vec(215, 190, 255), "[GITHUB-FETCH] - ", vec(100,255,100), "SUCCESS: ", Message)
+        break
+        case "info",
+            printColor(vec(215, 190, 255), "[GITHUB-FETCH] - ", vec(50,200,200), "INFO: ", Message)
+        break
+        default,
+            printColor(vec(215, 190, 255), "[GITHUB-FETCH] - ", vec(255), Message)
+        break
+    }
+}
+
+# Attempts to execute single fetch request. Returns -1 if the index incorrect. Returns 0 if execution can not be done yet.
+function number githubfetch_execute(StackIndex:number){
+    if( !LIB_INTERNAL_GITHUBFETCH_Stack:exists(StackIndex) ){ return -1 }
+    if( LIB_INTERNAL_GITHUBFETCH_IsLocked ){ return 0 }
+    if( !fileCanWrite() || !httpCanRequest() ){ return 0 }
+    
+    LIB_INTERNAL_GITHUBFETCH_IsLocked = 1
+    
+    const RequestTable = LIB_INTERNAL_GITHUBFETCH_Stack[StackIndex, table]
+    const Dir = ">e2shared/"+LIB_INTERNAL_GITHUBFETCH_Config["MainDir", string]+RequestTable["LOCAL_PATH", string]+RequestTable["NAME",string]+".txt"
+    
+    lib_internal_githubfetch_beVerbose("info", RequestTable["LOCAL_PATH", string]+RequestTable["NAME", string]+".txt - Fetching... ("+StackIndex+"/"+LIB_INTERNAL_GITHUBFETCH_Stack:count()+")")
+    
+    fileLoad(Dir)
+    httpRequest(RequestTable["URL", string])
+
+    return 1
+}
+
+# Semi-internal. Uses internal stack iterator, and lets you iterate over requests. Returns -1 if the iterator out of scope (end of loop)
+function number githubfetch_executeNext(){
+    if( LIB_INTERNAL_GITHUBFETCH_IsLocked ){ return 0 }
+    
+    LIB_INTERNAL_GITHUBFETCH_StackIterator++
+    if( LIB_INTERNAL_GITHUBFETCH_StackIterator>LIB_INTERNAL_GITHUBFETCH_Stack:count() ){ return -1 }
+    
+    const Result = githubfetch_execute(LIB_INTERNAL_GITHUBFETCH_StackIterator)
+    if( Result==0 ){ LIB_INTERNAL_GITHUBFETCH_StackIterator-- }
+
+    assert(Result!=-1, "githubfetch_executeNext(): Something went wrong. githubfetch_execute(n) returned -1.")
+    
+    return Result
+}
+
+# Main function. Adds new request.
+#
+# FileURL is the only non-optional parameter.
+# RelativeSavePath - relative to e2shared/github_fetch/ path (by default - "!" -> copy the structure from github),
+# NameOverwrite - How should the file be renamed? (by default - "" -> name will not be overwritten).
+# Callback - functions can't be checked if they're empty or not, so to not override my predefined callback - just call this function as githubfetch_addRequest(sss) (call an alias).
+#
+# Returns an ID
+function number githubfetch_addRequest(FileURL:string, RelativeSavePath:string, NameOverwrite:string, Callback:function){
+    assert(FileURL:find("/github.com/")!=0, "Incorrect URL. Github link expected. Expected: https://github.com/<author>/<repo>/blob/<branch>/<path/to/file/><file>.txt . Got:"+FileURL)
+    
+    local Link = FileURL:sub(FileURL:find("/github.com/")+12)
+    Link = LIB_INTERNAL_GITHUBFETCH_Config["RawContentURL", string]+Link
+    Link = Link:replace("/blob/", "/")
+    
+    const LinkArr = Link:explode("/")
+    if( RelativeSavePath=="!" ){# Copy folder structure of the repo
+        RelativeSavePath = "/"
+        
+        const TempArr = Link:sub(35):explode("/")
+        foreach(I:number, V:string = TempArr){
+            if( I!=TempArr:count() ){
+                RelativeSavePath += V+"/"
+            }
+        }
+    } elseif( RelativeSavePath:length()!=0 ){# Fail-proof
+        RelativeSavePath = RelativeSavePath[1]=="/" ? RelativeSavePath : "/"+RelativeSavePath
+        RelativeSavePath = RelativeSavePath[RelativeSavePath:length()]=="/" ? RelativeSavePath : RelativeSavePath+"/"
+    } else{
+        RelativeSavePath = "/"
+    }
+    
+    LinkArr[LinkArr:count(), string] = LinkArr[LinkArr:count(), string]:find(".txt")!=0 ? LinkArr[LinkArr:count(), string] : LinkArr[LinkArr:count(), string]+".txt"
+    NameOverwrite = NameOverwrite:length()!=0 ? NameOverwrite:replace(".txt", "") : LinkArr[LinkArr:count(), string]:replace(".txt", "") #To make sure that all files saved as .txt. No reason to leave possibility for unexpected behaviour.
+
+    Link = LinkArr:concat("/")
+    LIB_INTERNAL_GITHUBFETCH_Stack:pushTable(table(
+        "URL" = Link,
+        "LOCAL_PATH" = RelativeSavePath,
+        "FUNC" = Callback,
+        "NAME" = NameOverwrite,
+        "ASYNC.RESULT.HTTP" = "!$#WAIT#$!", # Special 'tag' that is used internally. Tells asyncProcess that all jobs aren't finished yet.
+        "ASYNC.WAITINGFORWRITE" = 0, # Used after all jobs are finished, and results are evaluated. If the new file should be written - this becomes 1. Needed only to differentiate between local loading and writing errors.
+        "ASYNC.RETURN" = table( # Values that are being passed to callback function.
+            "IsSuccess" = 0,
+            "URL" = Link,
+            "FileName" = NameOverwrite,
+            "FilePath" = RelativeSavePath,
+            "Reason" = "NULL"
+        )
+    ))
+    
+    return LIB_INTERNAL_GITHUBFETCH_Stack:count()
+}
+# Aliases for ease of use.
+function number githubfetch_addRequest(FileURL:string, RelativeSavePath:string, NameOverwrite:string){ return githubfetch_addRequest(FileURL, RelativeSavePath, NameOverwrite, LIB_INTERNAL_GITHUBFETCH_DefaultCallback) }
+function number githubfetch_addRequest(FileURL:string, RelativeSavePath:string){ return githubfetch_addRequest(FileURL, RelativeSavePath, "", LIB_INTERNAL_GITHUBFETCH_DefaultCallback) }
+function number githubfetch_addRequest(FileURL:string){ return githubfetch_addRequest(FileURL, "!", "", LIB_INTERNAL_GITHUBFETCH_DefaultCallback) }
+
+# Removes a request given the ID, and returns remaining request amount.
+function number githubfetch_removeRequest(StackIndex:number){
+    LIB_INTERNAL_GITHUBFETCH_Stack:removeTable(StackIndex)
+    return LIB_INTERNAL_GITHUBFETCH_Stack:count()
+}
+
+# Saved for later (lazy).
+function array githubfetch_getRequests(){
+    return LIB_INTERNAL_GITHUBFETCH_Stack:keys()
+}
+
+# Start execution loop and drop the iterator.
+function number githubfetch_executeAll(){
+    if( LIB_INTERNAL_GITHUBFETCH_Stack:count()<=0 ){
+        lib_internal_githubfetch_beVerbose("error", "No requests set. Canceling execution loop. Add requests you want to fetch using githubfetch_addRequest()!" )
+        return -1
+    }
+    
+    lib_internal_githubfetch_beVerbose("info", "Started fetching...")
+    
+    timer("lib.internal.githubfetch.executeAllLoop", 1)
+    LIB_INTERNAL_GITHUBFETCH_StackIterator = 0
+    
+    return LIB_INTERNAL_GITHUBFETCH_Stack:count()
+}
+
+# Releases the process (regardless of progress), to let new processes. !!SHOULD NOT BE USED EXTERNALLY!!
+function lib_internal_githubfetch_asyncReleaseProcess(){
+    assert(LIB_INTERNAL_GITHUBFETCH_IsLocked, "lib_internal_githubfetch_asyncReleaseProcess(): Something went wrong. Async process handler can't be called when no async process is present (report it to author).")
+    assert(LIB_INTERNAL_GITHUBFETCH_Stack:exists(LIB_INTERNAL_GITHUBFETCH_StackIterator), "lib_internal_githubfetch_asyncReleaseProcess(): LIB_INTERNAL_GITHUBFETCH_StackIterator is out of scope! (report it to author).")
+    
+    const RequestTable = LIB_INTERNAL_GITHUBFETCH_Stack[LIB_INTERNAL_GITHUBFETCH_StackIterator, table]
+    
+    if( RequestTable["FUNC", function]:getParameterTypes()[1, string]=="t" ){
+        RequestTable["FUNC", function](RequestTable["ASYNC.RETURN", table])
+    } else{
+        RequestTable["FUNC", function]()
+    }
+    
+    LIB_INTERNAL_GITHUBFETCH_IsLocked = 0
+}
+
+# Tries to finish the process, or returns to wait for new attempt (with new data). Will finish once all data is gathered. !!SHOULD NOT BE USED EXTERNALLY!!
+function lib_internal_githubfetch_asyncProcess(){
+    assert(LIB_INTERNAL_GITHUBFETCH_IsLocked, "lib_internal_githubfetch_asyncProcess(): Something went wrong. Async process handler can't be called when no async process is present (report it to author).")
+    assert(LIB_INTERNAL_GITHUBFETCH_Stack:exists(LIB_INTERNAL_GITHUBFETCH_StackIterator), "lib_internal_githubfetch_asyncProcess(): LIB_INTERNAL_GITHUBFETCH_StackIterator is out of scope! (report it to author).")
+    
+    const RequestTable = LIB_INTERNAL_GITHUBFETCH_Stack[LIB_INTERNAL_GITHUBFETCH_StackIterator, table]
+    
+    if( RequestTable["ASYNC.RESULT.HTTP", string]=="!$#WAIT#$!" ){
+        return
+    }
+    
+    if( !RequestTable["ASYNC.WAITINGFORWRITE", number] ){
+        RequestTable["ASYNC.WAITINGFORWRITE", number] = 1
+        lib_internal_githubfetch_beVerbose("info", RequestTable["LOCAL_PATH", string]+RequestTable["NAME", string]+".txt - Saving fetched file...")
+        fileWrite(LIB_INTERNAL_GITHUBFETCH_MainDir+RequestTable["LOCAL_PATH", string]+RequestTable["NAME", string]+".txt", RequestTable["ASYNC.RESULT.HTTP", string])
+        
+        return # Not ready to release a process yet. We need to write a file first.
+    }
+}
+
+
+
+event httpErrored(Error:string, Url:string) {
+    if( !LIB_INTERNAL_GITHUBFETCH_IsLocked ){ exit() }# Not our http, so not gonna listen.
+    const RequestTable = LIB_INTERNAL_GITHUBFETCH_Stack[LIB_INTERNAL_GITHUBFETCH_StackIterator, table]
+    if( RequestTable:count()<=0 ){ exit() }
+    
+    let ReturnError = function(Reason:string){
+        RequestTable["ASYNC.RETURN", table]["IsSuccess", number] = 0
+        RequestTable["ASYNC.RETURN", table]["Reason", string] = Reason
+        
+        lib_internal_githubfetch_asyncReleaseProcess()
+        LIB_INTERNAL_GITHUBFETCH_Stats["FAILS", number] = LIB_INTERNAL_GITHUBFETCH_Stats["FAILS", number]+1
+        exit()
+    }
+    
+    if( Error=="Timeout was reached" ){
+        lib_internal_githubfetch_beVerbose("error", RequestTable["LOCAL_PATH", string]+RequestTable["NAME", string]+".txt - Timeout was reached, url didn't responsd. Is it down?")
+        ReturnError("Timeout was reached. (Most probable - site is down.)")
+    } elseif( Error=="Couldn't resolve host name" ){
+        lib_internal_githubfetch_beVerbose("error", RequestTable["LOCAL_PATH", string]+RequestTable["NAME", string]+".txt - Couldn't resolve host name. Check if you've typed the url correctly, or your if you haven access to the Internet!")
+        ReturnError("Couldn't resolve host name. (No internet connection, or the domain in the link ('github.com') is incorrect.)")
+    } else{
+        lib_internal_githubfetch_beVerbose("error", RequestTable["LOCAL_PATH", string]+RequestTable["NAME", string]+".txt - Failed to fetch. Reason: "+Error)
+        ReturnError("Failed to fetch from github. ERROR: "+Error)
+    }
+}
+
+event httpLoaded(Body:string, Size:number, Url:string) {
+    if( !LIB_INTERNAL_GITHUBFETCH_IsLocked ){ exit() }# Not our http, so not gonna listen.
+    const RequestTable = LIB_INTERNAL_GITHUBFETCH_Stack[LIB_INTERNAL_GITHUBFETCH_StackIterator, table]
+    if( RequestTable:count()<=0 ){ exit() }
+    
+    let ReturnError = function(Reason:string){
+        RequestTable["ASYNC.RETURN", table]["IsSuccess", number] = 0
+        RequestTable["ASYNC.RETURN", table]["Reason", string] = Reason
+        
+        lib_internal_githubfetch_asyncReleaseProcess()
+        LIB_INTERNAL_GITHUBFETCH_Stats["FAILS", number] = LIB_INTERNAL_GITHUBFETCH_Stats["FAILS", number]+1
+        exit()
+    }
+    
+    if( Body=="404: Not Found" ){
+        lib_internal_githubfetch_beVerbose("error", RequestTable["LOCAL_PATH", string]+RequestTable["NAME", string]+".txt - File not found (404). Check your request link for typos!")
+        ReturnError("404: Not Found (Most probable - incorrect path/to/file/filename.txt)")
+    } elseif( Body=="403: Forbidden" ){
+        lib_internal_githubfetch_beVerbose("error", RequestTable["LOCAL_PATH", string]+RequestTable["NAME", string]+".txt - File not accessible (403). Recheck your request link! (How did you get it tho?)")
+        ReturnError("403: Forbidden (You're not authorized to GET from that url)")
+    } elseif( Body=="400: Bad Request" ){
+        lib_internal_githubfetch_beVerbose("error", RequestTable["LOCAL_PATH", string]+RequestTable["NAME", string]+".txt - Bad request sent. Please report it to the developer (@deltamolfar). (Incorrect requests should be prevented by this lib).")
+        ReturnError("400: Bad Request (Report it to the developer of this library (deltamolfar))")
+    } elseif( Body=="500: Internal Server Error" ){
+        lib_internal_githubfetch_beVerbose("error", RequestTable["LOCAL_PATH", string]+RequestTable["NAME", string]+".txt - Github internal server error.")
+        ReturnError("500: Internal Server Error (You shouldn't ever see it. You may report it to github itself)")
+    }
+    
+    if(Size>fileMaxSize()*1000){
+        lib_internal_githubfetch_beVerbose("error", RequestTable["LOCAL_PATH", string]+RequestTable["NAME", string]+".txt - Fetched file is too big. "+floor(Size/1024,2)+"Kb got, but "+floor(fileMaxSize(),2)+"Kb is a limit.")
+        
+        RequestTable["ASYNC.RETURN", table]["IsSuccess", number] = 0
+        RequestTable["ASYNC.RETURN", table]["Reason", string] = "Fetched file is too big."
+        
+        lib_internal_githubfetch_asyncReleaseProcess()
+        exit()
+    }
+    
+    RequestTable["ASYNC.RESULT.HTTP", string] = Body
+    lib_internal_githubfetch_beVerbose("success", RequestTable["LOCAL_PATH", string]+RequestTable["NAME", string]+".txt - Fetched from github.")
+
+    lib_internal_githubfetch_asyncProcess()
+}
+
+event fileWritten(FilePath:string, Data:string) {
+    if( !LIB_INTERNAL_GITHUBFETCH_IsLocked ){ exit() }
+    const RequestTable = LIB_INTERNAL_GITHUBFETCH_Stack[LIB_INTERNAL_GITHUBFETCH_StackIterator, table]
+    if( RequestTable:count()<=0 ){ exit() }
+
+    lib_internal_githubfetch_beVerbose("success", RequestTable["LOCAL_PATH", string]+RequestTable["NAME", string]+".txt - Fetched file saved to local storage.")
+            
+    RequestTable["ASYNC.RETURN", table]["IsSuccess", number] = 1
+    RequestTable["ASYNC.RETURN", table]["FilePath", string] = LIB_INTERNAL_GITHUBFETCH_MainDir+RequestTable["LOCAL_PATH", string]+RequestTable["NAME", string]+".txt"  
+    
+    lib_internal_githubfetch_asyncReleaseProcess()
+}
+
+
+
+if( clk("lib.internal.githubfetch.executeAllLoop") ){
+    const Result = githubfetch_executeNext()
+
+    if( Result!=-1 ){ timer("lib.internal.githubfetch.executeAllLoop", 250) }
+    else{
+        lib_internal_githubfetch_beVerbose("info", "Fetching finished")
+    }
+}
+
+
+#[
+if( first() ){
+    githubfetch_addRequest("https://github.com/deltamolfar/PublicE2/blob/main/delta_image_viewer/converted_images/cat_x256.txt", "!", "")
+    #githubfetch_addRequest("https://github.com/deltamolfar/PublicE2/blob/main/libraries/supertimers.txt", "!", "")
+    #githubfetch_addRequest("https://github.com/deltamolfar/PublicE2/blob/main/libraries/string.txt", "!", "")
+    
+    githubfetch_executeAll()
+}
