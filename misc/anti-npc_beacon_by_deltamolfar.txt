@@ -12,7 +12,8 @@
     ##      made by deltamolfar      ##
     ##        Glory to Ukraine       ##
     ###################################
-    
+
+    SOURCE: https://github.com/deltamolfar/PublicE2/blob/main/misc/anti-npc_beacon_by_deltamolfar.txt
     This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
     If you change anything in this code, don't expect me to help you.
 ]#
