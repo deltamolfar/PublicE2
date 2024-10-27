@@ -1,4 +1,4 @@
-@name Anti-NPC Beacon
+@name Anti-NPC Beacon by deltamolfar
 @persist SETTINGS:table
 @persist ENABLED ANGLE COLOR_PROGRESS COLOR_SWITCH SHOULD_RESTART
 @model models/hunter/blocks/cube075x075x075.mdl
@@ -6,8 +6,6 @@
 
 #[
     Just a minecraft beacon that kills any NPC in radius :)
-    Instructions:
-    - Spawn it.
     
     ###################################
     ##        Anti-NPC Beacon        ##
@@ -16,7 +14,7 @@
     ###################################
     
     This chip can be freely distributed between anyone you want, as long, as you keep the author credits.
-    If you want to change something, and help others, feel free to create an issue/PR.
+    If you change anything in this code, don't expect me to help you.
 ]#
 
 if( first() || duped() ){
@@ -98,7 +96,7 @@ if( first() || dupefinished() ){
     
     SETTINGS = table(
         "ExplosivePropClass" = "models/props_phx/cannonball.mdl", # -- Which should be used as explosive to kill npcs?
-        "RADIUS" = 1000, # -- How far should the beacon reach?
+        "RADIUS" = 512, # -- How far should the beacon reach?
         "GLOW_COLOR_1" = vec(154,244,237), # Between which 2 colors should the beacon constantly go?
         "GLOW_COLOR_2" = vec(73,212,203),
         "GLOW_COLOR_DISABLED" = vec(65),
